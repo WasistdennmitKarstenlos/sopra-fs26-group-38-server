@@ -39,7 +39,7 @@ public class UserController {
 	@ResponseBody
 	public List<UserGetDTO> getAllUsers(
 			@RequestHeader(value = "Authorization", required = false) String token) {
-		// Protect route: only authenticated users may list all users
+		// Task 33 Protect route: only authenticated users may list all users. 401 if token is missing or invalid.
 		userService.validateToken(token);
 
 		// fetch all users in the internal representation
