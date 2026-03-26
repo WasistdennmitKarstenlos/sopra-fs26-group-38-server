@@ -74,6 +74,10 @@ public class Trip implements Serializable {
 		return hostId;
 	}
 
+	public void setHostId(Long hostId) {
+		this.hostId = hostId;
+	}
+
 	public String getRoomCode() {
 		return roomCode;
 	}
@@ -98,13 +102,13 @@ public class Trip implements Serializable {
 	    // Placeholder for actual implementation
 	}
 
-    public List<Destination> getDestinations() {
-		return null; // Placeholder for actual implementation
-	}
+    // public List<Destination> getDestinations() {
+	// 	return null; // Placeholder for actual implementation
+	// }
 
-	public void addDestination(Destination destination) {
-	    // Placeholder for actual implementation
-	}
+	// public void addDestination(Destination destination) {
+	//     // Placeholder for actual implementation
+	// }
 
 	public void deleteDestination(long destinationId) {
 	     // Placeholder for actual implementation
@@ -114,12 +118,12 @@ public class Trip implements Serializable {
 		status = TripStatus.FINALIZED;
 	}
 
-	public DestScores evaluateDestScores() {
-		return null; // Placeholder for actual implementation
-	}
+	// public DestScores evaluateDestScores() {
+	// 	return null; // Placeholder for actual implementation
+	// }
 
-	public List<TripMembership> getMemberships() {
-		return null; // Placeholder for actual implementation
-	}
+	// public List<TripMembership> getMemberships() {
+	// 	return null; // Placeholder for actual implementation
+	// }
 
 }
