@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.*;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
+/*import ch.uzh.ifi.hase.soprafs26.rest.dto.UserLoginDTO;*/
+import ch.uzh.ifi.hase.soprafs26.rest.dto.UserRegisterDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
@@ -55,4 +57,19 @@ public class UserController {
 		// convert internal representation of user back to API
 		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(createdUser);
 	}
+
+	// Frontend register page send info here 
+	@PostMapping("/users/register")
+	@ResponseStatus(HttpStatus.CREATED)
+	@ResponseBody
+	public UserGetDTO registerUser(@RequestBody UserRegisterDTO userRegisterDTO) {
+		// convert API user to internal representation
+		User userInput = DTOMapper.INSTANCE.convertUserRegisterDTOtoEntity(userRegisterDTO);
+
+		// register user (self-registration with auto-login)
+		User registeredUser = userService.registerUser(userInput);
+		// convert internal representation of user back to API
+		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(registeredUser);
+	}
+
 }
