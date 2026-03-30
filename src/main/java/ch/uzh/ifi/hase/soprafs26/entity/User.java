@@ -13,7 +13,7 @@ import java.io.Serializable;
  * Every variable will be mapped into a database field with the @Column
  * annotation
  * - nullable = false -> this cannot be left empty
- * - unique = true -> this value must be unqiue across the database -> composes
+ * - unique = true -> this value must be unique across the database -> composes
  * the primary key
  */
 @Entity
@@ -29,6 +29,9 @@ public class User implements Serializable {
 	@Column(nullable = false, unique = true)
 	private String username;
 
+	@Column(nullable = false)
+	private String password;
+
 	@Column(nullable = true, unique = true)
 	private String token;
 
@@ -36,13 +39,7 @@ public class User implements Serializable {
 	private UserStatus status;
 
 	@Column(nullable = false)
-	private String password;
-
-	@Column(nullable = false)
 	private String creationDate;
-
-	@Column(nullable = true)
-	private String bio;
 
 	public Long getId() {
 		return id;
@@ -58,6 +55,14 @@ public class User implements Serializable {
 
 	public void setUsername(String username) {
 		this.username = username;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
 	}
 
 	public String getToken() {

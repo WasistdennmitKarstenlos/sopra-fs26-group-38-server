@@ -9,4 +9,7 @@ import ch.uzh.ifi.hase.soprafs26.entity.User;
 public interface UserRepository extends JpaRepository<User, Long> {
 
 	User findByUsername(String username);
+
+	// Good for authentication
+	User findByToken(String token);
 }
