@@ -40,7 +40,8 @@ public class TripController {
      */
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<TripGetDTO> getAllTrips() {
+    public List<TripGetDTO> getAllTrips(@RequestHeader(value = "Authorization", required = false) String token) {
+        userService.validateToken(token);
         List<Trip> trips = tripService.getAllTrips();
         return trips.stream()
                 .map(DTOMapper.INSTANCE::convertEntityToTripGetDTO)
@@ -54,7 +55,8 @@ public class TripController {
      */
     @GetMapping("/{tripId}")
     @ResponseStatus(HttpStatus.OK)
-    public TripGetDTO getTripById(@PathVariable Long tripId) {
+    public TripGetDTO getTripById(@RequestHeader(value = "Authorization", required = false) String token,@PathVariable Long tripId) {
+        userService.validateToken(token);
         Trip trip = tripService.getTripById(tripId);
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(trip);
     }
@@ -67,7 +69,9 @@ public class TripController {
      */
     @GetMapping("/room/{roomCode}")
     @ResponseStatus(HttpStatus.OK)
-    public TripGetDTO getTripByRoomCode(@PathVariable String roomCode) {
+    public TripGetDTO getTripByRoomCode(@RequestHeader(value = "Authorization", required = false) String token,
+                                        @PathVariable String roomCode) {
+        userService.validateToken(token);
         Trip trip = tripService.getTripByRoomCode(roomCode);
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(trip);
     }
@@ -79,7 +83,9 @@ public class TripController {
      */
     @GetMapping("/host/{hostId}")
     @ResponseStatus(HttpStatus.OK)
-    public List<TripGetDTO> getTripsByHostId(@PathVariable Long hostId) {
+    public List<TripGetDTO> getTripsByHostId(@RequestHeader(value = "Authorization", required = false) String token,
+                                             @PathVariable Long hostId) {
+        userService.validateToken(token);
         List<Trip> trips = tripService.getTripsByHostId(hostId);
         return trips.stream()
                 .map(DTOMapper.INSTANCE::convertEntityToTripGetDTO)
@@ -146,8 +152,10 @@ public class TripController {
      */
     @PutMapping("/{tripId}/status")
     @ResponseStatus(HttpStatus.OK)
-    public TripGetDTO updateTripStatus(@PathVariable Long tripId, 
-                                        @RequestParam Trip.TripStatus newStatus) {
+    public TripGetDTO updateTripStatus(@RequestHeader(value = "Authorization", required = false) String token,
+                                       @PathVariable Long tripId,
+                                       @RequestParam Trip.TripStatus newStatus) {
+        userService.validateToken(token);
         Trip updatedTrip = tripService.updateTripStatus(tripId, newStatus);
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(updatedTrip);
     }
@@ -161,8 +169,10 @@ public class TripController {
      */
     @PutMapping("/{tripId}/finalize")
     @ResponseStatus(HttpStatus.OK)
-    public TripGetDTO setFinalDestination(@PathVariable Long tripId,
+    public TripGetDTO setFinalDestination(@RequestHeader(value = "Authorization", required = false) String token,
+                                           @PathVariable Long tripId,
                                            @RequestParam Long finalDestinationId) {
+        userService.validateToken(token);
         Trip updatedTrip = tripService.setFinalDestination(tripId, finalDestinationId);
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(updatedTrip);
     }

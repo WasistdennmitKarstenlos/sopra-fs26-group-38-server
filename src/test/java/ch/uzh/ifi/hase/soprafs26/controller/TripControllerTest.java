@@ -2,10 +2,10 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
 import ch.uzh.ifi.hase.soprafs26.service.TripService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
-import ch.uzh.ifi.hase.soprafs26.entity.User;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,11 +63,13 @@ public class TripControllerTest {
 
         // this mocks the TripService -> we define above what the tripService should
         // return when getAllTrips() is called
+        given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
         given(tripService.getAllTrips()).willReturn(allTrips);
 
         // when
         MockHttpServletRequestBuilder getRequest = get("/trips")
-                .contentType(MediaType.APPLICATION_JSON);
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer 1");
 
         // then
         mockMvc.perform(getRequest)
@@ -89,11 +91,13 @@ public class TripControllerTest {
         trip.setHostId(1L);
         trip.setStatus(Trip.TripStatus.ACTIVE);
 
+        given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
         given(tripService.getTripById(1L)).willReturn(trip);
 
         // when
         MockHttpServletRequestBuilder getRequest = get("/trips/1")
-                .contentType(MediaType.APPLICATION_JSON);
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer 1");
 
         // then
         mockMvc.perform(getRequest)
@@ -113,11 +117,13 @@ public class TripControllerTest {
         trip.setHostId(1L);
         trip.setStatus(Trip.TripStatus.ACTIVE);
 
+        given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
         given(tripService.getTripByRoomCode("ABC123")).willReturn(trip);
 
         // when
         MockHttpServletRequestBuilder getRequest = get("/trips/room/ABC123")
-                .contentType(MediaType.APPLICATION_JSON);
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer 1");
 
         // then
         mockMvc.perform(getRequest)
@@ -144,11 +150,13 @@ public class TripControllerTest {
         trip2.setStatus(Trip.TripStatus.ACTIVE);
 
         List<Trip> trips = Arrays.asList(trip1, trip2);
+        given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
         given(tripService.getTripsByHostId(1L)).willReturn(trips);
 
         // when
         MockHttpServletRequestBuilder getRequest = get("/trips/host/1")
-                .contentType(MediaType.APPLICATION_JSON);
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer 1");
 
         // then
         mockMvc.perform(getRequest)
@@ -182,6 +190,7 @@ public class TripControllerTest {
         MockHttpServletRequestBuilder postRequest = post("/trips")
                 .header("Authorization", "Bearer test-token")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer 1")
                 .content(new ObjectMapper().writeValueAsString(tripPostDTO));
 
         // then
@@ -203,12 +212,14 @@ public class TripControllerTest {
         trip.setHostId(1L);
         trip.setStatus(Trip.TripStatus.EVALUATION);
 
+        given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
         given(tripService.updateTripStatus(1L, Trip.TripStatus.EVALUATION)).willReturn(trip);
 
         // when
         MockHttpServletRequestBuilder putRequest = put("/trips/1/status")
                 .param("newStatus", "EVALUATION")
-                .contentType(MediaType.APPLICATION_JSON);
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer 1");
 
         // then
         mockMvc.perform(putRequest)
@@ -227,12 +238,14 @@ public class TripControllerTest {
         trip.setStatus(Trip.TripStatus.FINALIZED);
         trip.setFinalDestinationId(5L);
 
+        given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
         given(tripService.setFinalDestination(1L, 5L)).willReturn(trip);
 
         // when
         MockHttpServletRequestBuilder putRequest = put("/trips/1/finalize")
                 .param("finalDestinationId", "5")
-                .contentType(MediaType.APPLICATION_JSON);
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer 1");
 
         // then
         mockMvc.perform(putRequest)
