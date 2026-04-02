@@ -47,6 +47,12 @@ public class TripControllerTest {
     @MockitoBean
     private TripService tripService;
 
+        @MockitoBean
+        private UserService userService;
+
+        @MockitoBean
+        private DestinationRealtimeService destinationRealtimeService;
+
     @Test
     public void givenTrips_whenGetTrips_thenReturnJsonArray() throws Exception {
         // given
@@ -234,4 +240,86 @@ public class TripControllerTest {
                 .andExpect(jsonPath("$.finalDestinationId", is(5)))
                 .andExpect(jsonPath("$.status", is("FINALIZED")));
     }
+
+    @Test
+    public void joinTripByRoomCode_validToken_success() throws Exception {
+        Trip trip = new Trip();
+        trip.setId(1L);
+        trip.setName("Paris Vacation");
+        trip.setRoomCode("ABC123");
+        trip.setHostId(1L);
+
+        User requester = new User();
+        requester.setId(2L);
+
+        given(userService.validateToken("Bearer token-1")).willReturn(requester);
+        given(tripService.joinTripByRoomCode("ABC123", 2L)).willReturn(trip);
+
+        MockHttpServletRequestBuilder postRequest = post("/trips/join/ABC123")
+                .header("Authorization", "Bearer token-1")
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(postRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roomCode", is("ABC123")));
+    }
+
+    @Test
+    public void addDestination_validInput_created() throws Exception {
+        DestinationPostDTO postDTO = new DestinationPostDTO();
+        postDTO.setLocationName("Zurich");
+
+        User requester = new User();
+        requester.setId(2L);
+
+        Destination destination = new Destination();
+        destination.setId(10L);
+        destination.setTripId(1L);
+        destination.setLocationName("Zurich");
+        destination.setProposedByUserId(2L);
+        destination.setCreatedAt(new Date());
+
+        given(userService.validateToken("Bearer token-1")).willReturn(requester);
+        given(tripService.addDestination(Mockito.eq(1L), Mockito.eq(2L), Mockito.any())).willReturn(destination);
+        given(tripService.getDestinations(1L, 2L)).willReturn(Collections.singletonList(destination));
+
+        MockHttpServletRequestBuilder postRequest = post("/trips/1/destinations")
+                .header("Authorization", "Bearer token-1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(postDTO));
+
+        mockMvc.perform(postRequest)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id", is(10)))
+                .andExpect(jsonPath("$.locationName", is("Zurich")))
+                .andExpect(jsonPath("$.tripId", is(1)));
+
+        Mockito.verify(destinationRealtimeService, Mockito.times(1)).publish(Mockito.eq(1L), Mockito.any());
+    }
+
+    @Test
+    public void getDestinations_validToken_success() throws Exception {
+        User requester = new User();
+        requester.setId(2L);
+
+        Destination destination = new Destination();
+        destination.setId(10L);
+        destination.setTripId(1L);
+        destination.setLocationName("Zurich");
+        destination.setProposedByUserId(2L);
+
+        given(userService.validateToken("Bearer token-1")).willReturn(requester);
+        given(tripService.getDestinations(1L, 2L)).willReturn(Collections.singletonList(destination));
+
+        MockHttpServletRequestBuilder getRequest = get("/trips/1/destinations")
+                .header("Authorization", "Bearer token-1")
+                .contentType(MediaType.APPLICATION_JSON);
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].locationName", is("Zurich")))
+                .andExpect(jsonPath("$[0].tripId", is(1)));
+    }
+
 }
