@@ -83,8 +83,9 @@ public class UserController {
 			@RequestHeader(value = "Authorization", required = false) String token) {
 		userService.logoutUser(token);
 	}
+    
 	// Frontend register page send info here 
-	@PostMapping("/users/register")
+	@PostMapping("/auth/register")
 	@ResponseStatus(HttpStatus.CREATED)
 	@ResponseBody
 	public UserGetDTO registerUser(@RequestBody UserRegisterDTO userRegisterDTO) {
