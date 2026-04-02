@@ -50,4 +50,12 @@ public class UserGetDTO {
 	public void setCreationDate(String creationDate) {
 		this.creationDate = creationDate;
 	}
+
+	public String getBio() {
+		return bio;
+	}
+
+	public void setBio(String bio) {
+		this.bio = bio;
+	}
 }
