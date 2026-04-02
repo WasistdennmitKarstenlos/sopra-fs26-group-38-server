@@ -2,11 +2,12 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
-import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
+import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.InviteDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
 import ch.uzh.ifi.hase.soprafs26.service.TripService;
@@ -14,6 +15,7 @@ import ch.uzh.ifi.hase.soprafs26.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
@@ -114,15 +116,17 @@ public class TripController {
      * Create a new trip
      * The authenticated user becomes the host of the trip
      * @param tripPostDTO trip data with name
-     * @param hostId the ID of the user creating the trip (should come from auth context in a real app)
+     * @param token Authorization header containing Bearer token
      * @return the created trip with room code
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public TripGetDTO createTrip(@RequestBody TripPostDTO tripPostDTO, 
-                                  @RequestParam Long hostId) {
+    public TripGetDTO createTrip(@RequestBody TripPostDTO tripPostDTO,
+                                 @RequestHeader(value = "Authorization", required = false) String token) {
+        User authenticatedUser = userService.validateToken(token);
+
         Trip trip = DTOMapper.INSTANCE.convertTripPostDTOtoEntity(tripPostDTO);
-        trip.setHostId(hostId);
+        trip.setHostId(authenticatedUser.getId());
         
         Trip createdTrip = tripService.createTrip(trip);
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(createdTrip);
