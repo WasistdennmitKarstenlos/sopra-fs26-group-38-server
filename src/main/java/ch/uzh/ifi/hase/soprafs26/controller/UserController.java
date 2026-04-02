@@ -56,23 +56,6 @@ public class UserController {
 	}
 
 	/**
-	 * POST /users
-	 * Admin endpoint: creates a user (no password required, starts OFFLINE).
-	 */
-	@PostMapping("/users")
-	@ResponseStatus(HttpStatus.CREATED)
-	@ResponseBody
-	public UserGetDTO createUser(@RequestBody UserPostDTO userPostDTO) {
-		// convert API user to internal representation
-		User userInput = DTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO);
-
-		// create user
-		User createdUser = userService.createUser(userInput);
-		// convert internal representation of user back to API
-		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(createdUser);
-	}
-
-	/**
 	 * POST /auth/login
 	 * Authenticates a user with username and password.
 	 * Returns 200 with user data (including token) on success.
