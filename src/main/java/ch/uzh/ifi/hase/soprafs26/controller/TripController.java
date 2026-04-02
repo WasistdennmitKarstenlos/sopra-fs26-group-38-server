@@ -1,13 +1,20 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
+import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
+import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
 import ch.uzh.ifi.hase.soprafs26.service.TripService;
-import org.springframework.beans.factory.annotation.Autowired;
+import ch.uzh.ifi.hase.soprafs26.service.UserService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,10 +29,16 @@ import java.util.stream.Collectors;
 public class TripController {
 
     private final TripService tripService;
+    private final UserService userService;
+    private final DestinationRealtimeService destinationRealtimeService;
 
-    @Autowired
-    public TripController(TripService tripService) {
+    public TripController(
+            TripService tripService,
+            UserService userService,
+            DestinationRealtimeService destinationRealtimeService) {
         this.tripService = tripService;
+        this.userService = userService;
+        this.destinationRealtimeService = destinationRealtimeService;
     }
 
     /**
@@ -173,4 +186,20 @@ public class TripController {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Real-time stream for destination list updates in a trip.
+     * Clients subscribe once and receive updates on each saved destination.
+     * @param tripId target trip id
+     * @param token authorization header
+     * @return SSE emitter
+     */
+    @GetMapping(value = "/{tripId}/destinations/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public SseEmitter streamDestinations(
+            @PathVariable Long tripId,
+            @RequestHeader(value = "Authorization", required = false) String token) {
+        User requester = userService.validateToken(token);
+        tripService.getDestinations(tripId, requester.getId());
+        return destinationRealtimeService.subscribe(tripId);
+    }
 }
