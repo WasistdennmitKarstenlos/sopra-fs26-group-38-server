@@ -35,6 +35,7 @@ public class TripServiceTest {
     @Mock
     private TripMembershipRepository tripMembershipRepository;
 
+
     @InjectMocks
     private TripService tripService;
 
