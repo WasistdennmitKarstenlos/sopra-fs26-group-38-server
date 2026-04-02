@@ -322,4 +322,19 @@ public class TripControllerTest {
                 .andExpect(jsonPath("$[0].tripId", is(1)));
     }
 
+    @Test
+    public void streamDestinations_validToken_success() throws Exception {
+        User requester = new User();
+        requester.setId(2L);
+
+        given(userService.validateToken("Bearer token-1")).willReturn(requester);
+        given(tripService.getDestinations(1L, 2L)).willReturn(Collections.emptyList());
+        given(destinationRealtimeService.subscribe(1L)).willReturn(new SseEmitter(0L));
+
+        MockHttpServletRequestBuilder getRequest = get("/trips/1/destinations/stream")
+                .header("Authorization", "Bearer token-1");
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isOk());
+    }
 }
