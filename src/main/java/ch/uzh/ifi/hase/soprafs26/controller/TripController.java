@@ -80,6 +80,23 @@ public class TripController {
     }
 
     /**
+     * Join a trip using a room code.
+     * Requires authentication and records membership for destination permissions.
+     * @param roomCode room code to join
+     * @param token authorization header
+     * @return joined trip details
+     */
+    @PostMapping("/join/{roomCode}")
+    @ResponseStatus(HttpStatus.OK)
+    public TripGetDTO joinTripByRoomCode(
+            @PathVariable String roomCode,
+            @RequestHeader(value = "Authorization", required = false) String token) {
+        User requester = userService.validateToken(token);
+        Trip trip = tripService.joinTripByRoomCode(roomCode, requester.getId());
+        return DTOMapper.INSTANCE.convertEntityToTripGetDTO(trip);
+    }
+
+    /**
      * Get all trips hosted by a specific user
      * @param hostId the ID of the host user
      * @return list of trips hosted by the user

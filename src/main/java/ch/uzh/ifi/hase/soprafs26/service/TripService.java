@@ -2,8 +2,10 @@ package ch.uzh.ifi.hase.soprafs26.service;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.entity.TripMembership;
 import ch.uzh.ifi.hase.soprafs26.repository.DestinationRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.TripRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.TripMembershipRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -21,13 +23,15 @@ public class TripService {
     private final Logger log = LoggerFactory.getLogger(TripService.class);
     private final TripRepository tripRepository;
     private final DestinationRepository destinationRepository;
-    @Autowired
+    private final TripMembershipRepository tripMembershipRepository;
 
     public TripService(
             TripRepository tripRepository,
             DestinationRepository destinationRepository,
+            TripMembershipRepository tripMembershipRepository) {
         this.tripRepository = tripRepository;
         this.destinationRepository = destinationRepository;
+        this.tripMembershipRepository = tripMembershipRepository;
     }
 
     /**
@@ -97,9 +101,26 @@ public class TripService {
 
         // Save to database
         Trip savedTrip = tripRepository.save(trip);
+        tripMembershipRepository.save(new TripMembership(savedTrip.getId(), savedTrip.getHostId()));
         log.info("Trip created successfully with id: {}, room code: {}", savedTrip.getId(), roomCode);
 
         return savedTrip;
+    }
+
+    /**
+     * Join a trip by room code. Creates membership if it does not exist yet.
+     * @param roomCode room code for the trip
+     * @param userId logged-in user id
+     * @return the joined trip
+     */
+    public Trip joinTripByRoomCode(String roomCode, Long userId) {
+        Trip trip = getTripByRoomCode(roomCode);
+
+        if (!tripMembershipRepository.existsByTripIdAndUserId(trip.getId(), userId)) {
+            tripMembershipRepository.save(new TripMembership(trip.getId(), userId));
+        }
+
+        return trip;
     }
     /**
      * Add destination proposal to a trip for a participant.
