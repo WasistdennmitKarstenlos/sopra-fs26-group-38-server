@@ -1,129 +1,118 @@
 package ch.uzh.ifi.hase.soprafs26.entity;
 
-import ch.uzh.ifi.hase.soprafs26.constant.TripStatus;
 import jakarta.persistence.*;
 import java.io.Serializable;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Date;
 
 /**
- * Internal Trip Representation.
- * This class models a trip and defines how it is persisted in the database.
- *
- * Field mapping notes:
- * - nullable = false -> value is required
- * - unique = true -> value must be unique across rows
+ * Trip represents a group trip planning room.
+ * Users can create trips, invite others, propose destinations and activities.
  */
 @Entity
-@Table(name = "trips")
+@Table(name = "TRIP")
 public class Trip implements Serializable {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	@Id
-	@GeneratedValue
-	private Long tripId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@Column(nullable = false)
-	private String tripName;
+    @Column(nullable = false)
+    private String name;
 
-	@Column(nullable = false)
-	private Long hostId;
+    @Column(nullable = false, unique = true)
+    private String roomCode;
 
-	@Column(nullable = false, unique = true)
-	private String roomCode;
+    @Column(nullable = false)
+    private Long hostId; // Reference to User who created this trip
 
-	@Column(nullable = false)
-	private LocalDateTime creationDate;
+    @Column(nullable = false, updatable = false)
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date creationDate;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
-	private TripStatus status;
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private TripStatus status; // ACTIVE, EVALUATION, FINALIZED
 
-	// @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-	// private List<TripMembership> memberships = new ArrayList<>();
+    @Column
+    private Long finalDestinationId; // ID of the selected destination (after final evaluation)
 
-	// @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-	// private List<Destination> destinations = new ArrayList<>();
+    // Constructors
+    public Trip() {
+        this.status = TripStatus.ACTIVE;
+        this.creationDate = new Date();
+    }
 
-	@PrePersist
-	public void initializeDefaults() {
-		if (creationDate == null) {
-			creationDate = LocalDateTime.now();
-		}
-		if (status == null) {
-			status = TripStatus.PLANNING;
-		}
-	}
+    public Trip(String name, String roomCode, Long hostId) {
+        this.name = name;
+        this.roomCode = roomCode;
+        this.hostId = hostId;
+        this.status = TripStatus.ACTIVE;
+        this.creationDate = new Date();
+    }
 
-
+    // Getters and Setters
     public Long getId() {
-		return tripId;
-	}
+        return id;
+    }
 
-	public String getName() {
-		return tripName;
-	}
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-	public void setName(String name) {
-		this.tripName = name;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public Long getHostId() {
-		return hostId;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public void setHostId(Long hostId) {
-		this.hostId = hostId;
-	}
+    public String getRoomCode() {
+        return roomCode;
+    }
 
-	public String getRoomCode() {
-		return roomCode;
-	}
+    public void setRoomCode(String roomCode) {
+        this.roomCode = roomCode;
+    }
 
-	public void setRoomCode(String roomCode) {
-		this.roomCode = roomCode;
-	}
+    public Long getHostId() {
+        return hostId;
+    }
 
-	public LocalDateTime getCreationDate() {
-		return creationDate;
-	}
+    public void setHostId(Long hostId) {
+        this.hostId = hostId;
+    }
 
-	public TripStatus getStatus() {
-		return status;
-	}
+    public Date getCreationDate() {
+        return creationDate;
+    }
 
-	public void setStatus(TripStatus status) {
-		this.status = status;
-	}
+    public void setCreationDate(Date creationDate) {
+        this.creationDate = creationDate;
+    }
 
-	public void joinTrip(long userId) {
-	    // Placeholder for actual implementation
-	}
+    public TripStatus getStatus() {
+        return status;
+    }
 
-    // public List<Destination> getDestinations() {
-	// 	return null; // Placeholder for actual implementation
-	// }
+    public void setStatus(TripStatus status) {
+        this.status = status;
+    }
 
-	// public void addDestination(Destination destination) {
-	//     // Placeholder for actual implementation
-	// }
+    public Long getFinalDestinationId() {
+        return finalDestinationId;
+    }
 
-	public void deleteDestination(long destinationId) {
-	     // Placeholder for actual implementation
-	}
+    public void setFinalDestinationId(Long finalDestinationId) {
+        this.finalDestinationId = finalDestinationId;
+    }
 
-	public void finalizeTrip() {
-		status = TripStatus.FINALIZED;
-	}
-
-	// public DestScores evaluateDestScores() {
-	// 	return null; // Placeholder for actual implementation
-	// }
-
-	// public List<TripMembership> getMemberships() {
-	// 	return null; // Placeholder for actual implementation
-	// }
-
+    // Nested enum for Trip status
+    public enum TripStatus {
+        ACTIVE,           // Accepting destinations and activities
+        EVALUATION,       // In evaluation mode, read-only
+        FINALIZED         // Final destination selected, fully read-only
+    }
 }

@@ -5,11 +5,11 @@ import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 public class UserGetDTO {
 
 	private Long id;
-	private String name;
 	private String username;
 	private UserStatus status;
-	private String token;
 	private String creationDate;
+	private String bio;
+	private String token;
 
 	public Long getId() {
 		return id;
@@ -17,14 +17,6 @@ public class UserGetDTO {
 
 	public void setId(Long id) {
 		this.id = id;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
 	}
 
 	public String getUsername() {
