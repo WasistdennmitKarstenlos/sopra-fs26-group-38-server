@@ -1,13 +1,17 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.InviteDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.TripService;
+import ch.uzh.ifi.hase.soprafs26.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,10 +26,12 @@ import java.util.stream.Collectors;
 public class TripController {
 
     private final TripService tripService;
+    private final UserService userService;
 
     @Autowired
-    public TripController(TripService tripService) {
+    public TripController(TripService tripService, UserService userService) {
         this.tripService = tripService;
+        this.userService = userService;
     }
 
     /**
@@ -84,18 +90,52 @@ public class TripController {
      * Create a new trip
      * The authenticated user becomes the host of the trip
      * @param tripPostDTO trip data with name
-     * @param hostId the ID of the user creating the trip (should come from auth context in a real app)
+     * @param token Authorization header containing Bearer token
      * @return the created trip with room code
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public TripGetDTO createTrip(@RequestBody TripPostDTO tripPostDTO, 
-                                  @RequestParam Long hostId) {
+    public TripGetDTO createTrip(@RequestBody TripPostDTO tripPostDTO,
+                                 @RequestHeader(value = "Authorization", required = false) String token) {
+        User authenticatedUser = userService.validateToken(token);
+
         Trip trip = DTOMapper.INSTANCE.convertTripPostDTOtoEntity(tripPostDTO);
-        trip.setHostId(hostId);
+        trip.setHostId(authenticatedUser.getId());
         
         Trip createdTrip = tripService.createTrip(trip);
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(createdTrip);
+    }
+
+    /**
+     * Generate a shareable invite for a trip
+     * Only the host can generate an invite
+     * @param tripId the ID of the trip
+     * @param token Authorization header containing Bearer token
+     * @return the invite with room code
+     * @throws ResponseStatusException 401 if user not authenticated
+     * @throws ResponseStatusException 403 if user is not the host
+     * @throws ResponseStatusException 404 if trip not found
+     */
+    @PostMapping("/{tripId}/invite")
+    @ResponseStatus(HttpStatus.CREATED)
+    public InviteDTO generateInvite(@PathVariable Long tripId,
+                                    @RequestHeader(value = "Authorization", required = false) String token) {
+        // Validate user is authenticated
+        User authenticatedUser = userService.validateToken(token);
+
+        // Get the trip - will throw 404 if not found
+        Trip trip = tripService.getTripById(tripId);
+
+        // Check if user is the host - throw 403 if not
+        if (!trip.getHostId().equals(authenticatedUser.getId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Only the host can generate an invite for this trip"
+            );
+        }
+
+        // Return the invite with the room code
+        return new InviteDTO(trip.getRoomCode());
     }
 
     /**
