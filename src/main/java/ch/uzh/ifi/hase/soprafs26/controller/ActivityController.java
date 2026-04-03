@@ -1,0 +1,71 @@
+package ch.uzh.ifi.hase.soprafs26.controller;
+
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityPostDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
+import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
+import ch.uzh.ifi.hase.soprafs26.service.ActivitySearchService;
+import ch.uzh.ifi.hase.soprafs26.service.UserService;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+public class ActivityController {
+
+    private final ActivitySearchService activitySearchService;
+    private final ActivityManagementService activityManagementService;
+    private final UserService userService;
+
+    public ActivityController(ActivitySearchService activitySearchService,
+                              ActivityManagementService activityManagementService,
+                              UserService userService) {
+        this.activitySearchService = activitySearchService;
+        this.activityManagementService = activityManagementService;
+        this.userService = userService;
+    }
+
+    @GetMapping("/trips/{tripId}/destinations/{destinationId}/activities")
+    @ResponseStatus(HttpStatus.OK)
+    public List<ActivitySearchResultDTO> searchActivities(@PathVariable("tripId") Long tripId,
+                                                          @PathVariable("destinationId") Long destinationId,
+                                                          @RequestParam(value = "query", required = false) String query,
+                                                          @RequestParam(value = "location", required = false) String location,
+                                                          @RequestParam(value = "radius", required = false) Integer radius,
+                                                          @RequestHeader(value = "Authorization", required = false) String token) {
+        userService.validateToken(token);
+
+        if (query == null || query.trim().isEmpty()) {
+            return activityManagementService.getSelectedActivities(tripId, destinationId);
+        }
+
+        return activitySearchService.searchActivities(tripId, destinationId, query, location, radius);
+    }
+
+    @PostMapping("/trips/{tripId}/destinations/{destinationId}/activities")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ActivitySearchResultDTO addActivity(@PathVariable("tripId") Long tripId,
+                                               @PathVariable("destinationId") Long destinationId,
+                                               @RequestBody ActivityPostDTO activityPostDTO,
+                                               @RequestHeader(value = "Authorization", required = false) String token) {
+        userService.validateToken(token);
+        return activityManagementService.addActivity(tripId, destinationId, activityPostDTO);
+    }
+
+    @GetMapping("/activities/search")
+    @ResponseStatus(HttpStatus.OK)
+    public List<ActivitySearchResultDTO> searchActivitiesLegacy(@RequestParam("query") String query,
+                                                                @RequestParam(value = "location", required = false) String location,
+                                                                @RequestParam(value = "radius", required = false) Integer radius,
+                                                                @RequestHeader(value = "Authorization", required = false) String token) {
+        userService.validateToken(token);
+        return activitySearchService.searchActivities(null, null, query, location, radius);
+    }
+}
