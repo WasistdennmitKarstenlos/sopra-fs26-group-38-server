@@ -16,15 +16,16 @@ import java.util.List;
 public class ActivityManagementService {
 
     private final ActivityRepository activityRepository;
-    private final TripService tripService;
+    private final DestinationService destinationService;
 
-    public ActivityManagementService(ActivityRepository activityRepository, TripService tripService) {
+    public ActivityManagementService(ActivityRepository activityRepository,
+                                     DestinationService destinationService) {
         this.activityRepository = activityRepository;
-        this.tripService = tripService;
+        this.destinationService = destinationService;
     }
 
     public List<ActivitySearchResultDTO> getSelectedActivities(Long tripId, Long destinationId) {
-        tripService.getTripById(tripId);
+        destinationService.getDestinationEntity(tripId, destinationId);
         return activityRepository.findByTripIdAndDestinationIdOrderByIdDesc(tripId, destinationId)
                 .stream()
                 .map(this::toResultDTO)
@@ -32,7 +33,7 @@ public class ActivityManagementService {
     }
 
     public ActivitySearchResultDTO addActivity(Long tripId, Long destinationId, ActivityPostDTO activityPostDTO) {
-        tripService.getTripById(tripId);
+        destinationService.getDestinationEntity(tripId, destinationId);
         validateActivityPostDTO(activityPostDTO);
 
         if (activityRepository.findByTripIdAndDestinationIdAndPlaceId(tripId, destinationId, activityPostDTO.getPlaceId()).isPresent()) {
@@ -54,6 +55,33 @@ public class ActivityManagementService {
         return toResultDTO(savedActivity);
     }
 
+    public ActivitySearchResultDTO updateActivity(Long tripId, Long destinationId, Long activityId, ActivityPostDTO activityPostDTO) {
+        destinationService.getDestinationEntity(tripId, destinationId);
+        validateActivityPostDTO(activityPostDTO);
+
+        Activity activity = activityRepository.findByIdAndTripIdAndDestinationId(activityId, tripId, destinationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Activity not found"));
+
+        activity.setPlaceId(activityPostDTO.getPlaceId().trim());
+        activity.setName(activityPostDTO.getName().trim());
+        activity.setAddress(activityPostDTO.getAddress());
+        activity.setRating(activityPostDTO.getRating());
+        activity.setPhotoUrl(activityPostDTO.getPhotoUrl());
+        activity.setLatitude(activityPostDTO.getLatitude());
+        activity.setLongitude(activityPostDTO.getLongitude());
+
+        return toResultDTO(activityRepository.save(activity));
+    }
+
+    public void deleteActivity(Long tripId, Long destinationId, Long activityId) {
+        destinationService.getDestinationEntity(tripId, destinationId);
+
+        Activity activity = activityRepository.findByIdAndTripIdAndDestinationId(activityId, tripId, destinationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Activity not found"));
+
+        activityRepository.delete(activity);
+    }
+
     private void validateActivityPostDTO(ActivityPostDTO activityPostDTO) {
         if (activityPostDTO == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Activity payload is required");
@@ -68,6 +96,7 @@ public class ActivityManagementService {
 
     private ActivitySearchResultDTO toResultDTO(Activity activity) {
         ActivitySearchResultDTO resultDTO = new ActivitySearchResultDTO();
+        resultDTO.setId(activity.getId());
         resultDTO.setPlaceId(activity.getPlaceId());
         resultDTO.setName(activity.getName());
         resultDTO.setAddress(activity.getAddress());

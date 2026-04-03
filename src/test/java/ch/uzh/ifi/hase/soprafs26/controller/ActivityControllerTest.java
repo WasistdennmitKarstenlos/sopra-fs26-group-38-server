@@ -19,6 +19,8 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -125,6 +127,54 @@ public class ActivityControllerTest {
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.placeId").value("place-1"))
                     .andExpect(jsonPath("$.name").value("City Museum"));
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    @Test
+    public void updateActivity_success() {
+        User user = new User();
+        user.setId(1L);
+
+        ActivityPostDTO postDTO = new ActivityPostDTO();
+        postDTO.setPlaceId("place-1");
+        postDTO.setName("Updated Museum");
+
+        ActivitySearchResultDTO updatedDTO = new ActivitySearchResultDTO();
+        updatedDTO.setId(10L);
+        updatedDTO.setPlaceId("place-1");
+        updatedDTO.setName("Updated Museum");
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.when(activityManagementService.updateActivity(Mockito.eq(1L), Mockito.eq(2L), Mockito.eq(10L), Mockito.any(ActivityPostDTO.class)))
+                .thenReturn(updatedDTO);
+
+        try {
+            mockMvc.perform(put("/trips/1/destinations/2/activities/10")
+                            .header("Authorization", "Bearer token")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(new ObjectMapper().writeValueAsString(postDTO)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(10))
+                    .andExpect(jsonPath("$.name").value("Updated Museum"));
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    @Test
+    public void deleteActivity_success() {
+        User user = new User();
+        user.setId(1L);
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+
+        try {
+            mockMvc.perform(delete("/trips/1/destinations/2/activities/10")
+                            .header("Authorization", "Bearer token")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isNoContent());
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }

@@ -12,4 +12,6 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
     List<Activity> findByTripIdAndDestinationIdOrderByIdDesc(Long tripId, Long destinationId);
 
     Optional<Activity> findByTripIdAndDestinationIdAndPlaceId(Long tripId, Long destinationId, String placeId);
+
+    Optional<Activity> findByIdAndTripIdAndDestinationId(Long activityId, Long tripId, Long destinationId);
 }

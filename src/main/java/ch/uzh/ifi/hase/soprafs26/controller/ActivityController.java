@@ -8,12 +8,14 @@ import ch.uzh.ifi.hase.soprafs26.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 import java.util.List;
 
@@ -57,6 +59,27 @@ public class ActivityController {
                                                @RequestHeader(value = "Authorization", required = false) String token) {
         userService.validateToken(token);
         return activityManagementService.addActivity(tripId, destinationId, activityPostDTO);
+    }
+
+    @PutMapping("/trips/{tripId}/destinations/{destinationId}/activities/{activityId}")
+    @ResponseStatus(HttpStatus.OK)
+    public ActivitySearchResultDTO updateActivity(@PathVariable("tripId") Long tripId,
+                                                  @PathVariable("destinationId") Long destinationId,
+                                                  @PathVariable("activityId") Long activityId,
+                                                  @RequestBody ActivityPostDTO activityPostDTO,
+                                                  @RequestHeader(value = "Authorization", required = false) String token) {
+        userService.validateToken(token);
+        return activityManagementService.updateActivity(tripId, destinationId, activityId, activityPostDTO);
+    }
+
+    @DeleteMapping("/trips/{tripId}/destinations/{destinationId}/activities/{activityId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteActivity(@PathVariable("tripId") Long tripId,
+                               @PathVariable("destinationId") Long destinationId,
+                               @PathVariable("activityId") Long activityId,
+                               @RequestHeader(value = "Authorization", required = false) String token) {
+        userService.validateToken(token);
+        activityManagementService.deleteActivity(tripId, destinationId, activityId);
     }
 
     @GetMapping("/activities/search")

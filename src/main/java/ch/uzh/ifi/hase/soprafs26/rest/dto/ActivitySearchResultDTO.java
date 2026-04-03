@@ -6,6 +6,7 @@ public class ActivitySearchResultDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    private Long id;
     private String placeId;
     private String name;
     private String address;
@@ -13,6 +14,14 @@ public class ActivitySearchResultDTO implements Serializable {
     private String photoUrl;
     private Double latitude;
     private Double longitude;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     public String getPlaceId() {
         return placeId;

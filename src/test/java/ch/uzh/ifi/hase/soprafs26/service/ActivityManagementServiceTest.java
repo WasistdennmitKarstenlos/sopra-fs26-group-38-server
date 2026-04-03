@@ -1,6 +1,7 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Activity;
+import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
@@ -24,7 +25,7 @@ public class ActivityManagementServiceTest {
     private ActivityRepository activityRepository;
 
     @Mock
-    private TripService tripService;
+    private DestinationService destinationService;
 
     @InjectMocks
     private ActivityManagementService activityManagementService;
@@ -53,6 +54,11 @@ public class ActivityManagementServiceTest {
         saved.setRating(4.5);
         saved.setPhotoUrl("https://example.com/photo.jpg");
 
+        Destination destination = new Destination();
+        destination.setId(2L);
+        destination.setTripId(1L);
+
+        Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(destination);
         Mockito.when(activityRepository.findByTripIdAndDestinationIdAndPlaceId(1L, 2L, "place-1"))
                 .thenReturn(Optional.empty());
         Mockito.when(activityRepository.save(Mockito.any(Activity.class))).thenReturn(saved);
@@ -70,6 +76,11 @@ public class ActivityManagementServiceTest {
         postDTO.setPlaceId("place-1");
         postDTO.setName("City Museum");
 
+        Destination destination = new Destination();
+        destination.setId(2L);
+        destination.setTripId(1L);
+
+        Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(destination);
         Mockito.when(activityRepository.findByTripIdAndDestinationIdAndPlaceId(1L, 2L, "place-1"))
                 .thenReturn(Optional.of(new Activity()));
 
@@ -84,6 +95,11 @@ public class ActivityManagementServiceTest {
         activity.setPlaceId("place-1");
         activity.setName("City Museum");
 
+        Destination destination = new Destination();
+        destination.setId(2L);
+        destination.setTripId(1L);
+
+        Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(destination);
         Mockito.when(activityRepository.findByTripIdAndDestinationIdOrderByIdDesc(1L, 2L))
                 .thenReturn(List.of(activity));
 
@@ -92,5 +108,49 @@ public class ActivityManagementServiceTest {
         assertEquals(1, result.size());
         assertEquals("place-1", result.get(0).getPlaceId());
         assertEquals("City Museum", result.get(0).getName());
+    }
+
+    @Test
+    public void updateActivity_success() {
+        ActivityPostDTO postDTO = new ActivityPostDTO();
+        postDTO.setPlaceId("place-1");
+        postDTO.setName("City Museum Updated");
+
+        Activity existing = new Activity();
+        existing.setId(10L);
+        existing.setTripId(1L);
+        existing.setDestinationId(2L);
+        existing.setPlaceId("place-1");
+        existing.setName("Old");
+
+        Destination destination = new Destination();
+        destination.setId(2L);
+        destination.setTripId(1L);
+
+        Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(destination);
+        Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(10L, 1L, 2L)).thenReturn(Optional.of(existing));
+        Mockito.when(activityRepository.save(Mockito.any(Activity.class))).thenReturn(existing);
+
+        ActivitySearchResultDTO result = activityManagementService.updateActivity(1L, 2L, 10L, postDTO);
+        assertEquals("City Museum Updated", result.getName());
+    }
+
+    @Test
+    public void deleteActivity_success() {
+        Activity existing = new Activity();
+        existing.setId(10L);
+        existing.setTripId(1L);
+        existing.setDestinationId(2L);
+
+        Destination destination = new Destination();
+        destination.setId(2L);
+        destination.setTripId(1L);
+
+        Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(destination);
+        Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(10L, 1L, 2L)).thenReturn(Optional.of(existing));
+
+        activityManagementService.deleteActivity(1L, 2L, 10L);
+
+        Mockito.verify(activityRepository, Mockito.times(1)).delete(existing);
     }
 }
