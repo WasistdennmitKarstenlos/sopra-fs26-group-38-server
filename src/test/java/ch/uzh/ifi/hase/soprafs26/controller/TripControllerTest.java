@@ -46,8 +46,17 @@ public class TripControllerTest {
     @MockitoBean
     private TripService tripService;
 
-        @MockitoBean
-        private UserService userService;
+    @MockitoBean
+    private UserService userService;
+
+    private User authenticatedUser() {
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("testUser");
+        user.setStatus(UserStatus.ONLINE);
+        user.setToken("1");
+        return user;
+    }
 
     @Test
     public void givenTrips_whenGetTrips_thenReturnJsonArray() throws Exception {
