@@ -13,10 +13,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import tools.jackson.databind.ObjectMapper;
@@ -204,7 +206,6 @@ public class TripControllerTest {
         MockHttpServletRequestBuilder postRequest = post("/trips")
                 .header("Authorization", "Bearer test-token")
                 .contentType(MediaType.APPLICATION_JSON)
-                .header("Authorization", "Bearer 1")
                 .content(new ObjectMapper().writeValueAsString(tripPostDTO));
 
         // then
@@ -369,7 +370,10 @@ public class TripControllerTest {
 
         mockMvc.perform(getRequest)
                 .andExpect(status().isOk());
-    public void generateInvite_invalidToken_unauthorized() throws Exception {
+    }
+    
+        @Test
+        public void generateInvite_invalidToken_unauthorized() throws Exception {
         // given
         given(userService.validateToken("Bearer invalid-token"))
                 .willThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired token!"));

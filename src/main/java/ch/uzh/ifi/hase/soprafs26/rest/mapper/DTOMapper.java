@@ -32,6 +32,11 @@ public interface DTOMapper {
 
 	@Mapping(source = "username", target = "username")
 	@Mapping(source = "password", target = "password")
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "token", ignore = true)
+	@Mapping(target = "status", ignore = true)
+	@Mapping(target = "creationDate", ignore = true)
+	@Mapping(target = "bio", ignore = true)
 	User convertUserPostDTOtoEntity(UserPostDTO userPostDTO);
 
 	@Mapping(source = "id", target = "id")
@@ -45,7 +50,17 @@ public interface DTOMapper {
     @Mapping(source = "username", target = "username")
     @Mapping(source = "password", target = "password")
 	@Mapping(source = "bio", target = "bio")
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "token", ignore = true)
+	@Mapping(target = "status", ignore = true)
+	@Mapping(target = "creationDate", ignore = true)
 	User convertUserRegisterDTOtoEntity(UserRegisterDTO userRegisterDTO);
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "roomCode", ignore = true)
+	@Mapping(target = "hostId", ignore = true)
+	@Mapping(target = "creationDate", ignore = true)
+	@Mapping(target = "status", ignore = true)
+	@Mapping(target = "finalDestinationId", ignore = true)
 	@Mapping(source = "name", target = "name")
 	Trip convertTripPostDTOtoEntity(TripPostDTO tripPostDTO);
 
@@ -64,6 +79,10 @@ public interface DTOMapper {
 	}
 
 	@Mapping(source = "locationName", target = "locationName")
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "tripId", ignore = true)
+	@Mapping(target = "proposedByUserId", ignore = true)
+	@Mapping(target = "createdAt", ignore = true)
 	Destination convertDestinationPostDTOtoEntity(DestinationPostDTO destinationPostDTO);
 
 	@Mapping(source = "id", target = "id")
