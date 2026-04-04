@@ -85,7 +85,7 @@ public class UserController {
 	}
     
 	// Frontend register page send info here 
-	@PostMapping("/auth/register")
+	@PostMapping("/users/register")
 	@ResponseStatus(HttpStatus.CREATED)
 	@ResponseBody
 	public UserGetDTO registerUser(@RequestBody UserRegisterDTO userRegisterDTO) {
