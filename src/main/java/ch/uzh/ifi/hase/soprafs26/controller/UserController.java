@@ -31,29 +31,6 @@ public class UserController {
 	}
 
 	/**
-	 * GET /users
-	 * Returns all users. Requires a valid Authorization token.
-	 */
-	@GetMapping("/users")
-	@ResponseStatus(HttpStatus.OK)
-	@ResponseBody
-	public List<UserGetDTO> getAllUsers(
-			@RequestHeader(value = "Authorization", required = false) String token) {
-		// Task 33 Protect route: only authenticated users may list all users. 401 if token is missing or invalid.
-		userService.validateToken(token);
-
-		// fetch all users in the internal representation
-		List<User> users = userService.getUsers();
-		List<UserGetDTO> userGetDTOs = new ArrayList<>();
-
-		// convert each user to the API representation
-		for (User user : users) {
-			userGetDTOs.add(DTOMapper.INSTANCE.convertEntityToUserGetDTO(user));
-		}
-		return userGetDTOs;
-	}
-
-	/**
 	 * POST /auth/login
 	 * Authenticates a user with username and password.
 	 * Returns 200 with user data (including token) on success.
@@ -83,7 +60,7 @@ public class UserController {
 	}
     
 	// Frontend register page send info here 
-	@PostMapping("/auth/register")
+	@PostMapping("/users/register")
 	@ResponseStatus(HttpStatus.CREATED)
 	@ResponseBody
 	public UserGetDTO registerUser(@RequestBody UserRegisterDTO userRegisterDTO) {

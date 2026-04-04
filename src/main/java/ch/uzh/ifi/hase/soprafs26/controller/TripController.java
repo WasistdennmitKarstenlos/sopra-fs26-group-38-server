@@ -7,14 +7,17 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.InviteDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
 import ch.uzh.ifi.hase.soprafs26.service.TripService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -47,7 +50,8 @@ public class TripController {
      */
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<TripGetDTO> getAllTrips() {
+    public List<TripGetDTO> getAllTrips(@RequestHeader(value = "Authorization", required = false) String token) {
+        userService.validateToken(token);
         List<Trip> trips = tripService.getAllTrips();
         return trips.stream()
                 .map(DTOMapper.INSTANCE::convertEntityToTripGetDTO)
@@ -61,7 +65,8 @@ public class TripController {
      */
     @GetMapping("/{tripId}")
     @ResponseStatus(HttpStatus.OK)
-    public TripGetDTO getTripById(@PathVariable Long tripId) {
+    public TripGetDTO getTripById(@RequestHeader(value = "Authorization", required = false) String token,@PathVariable Long tripId) {
+        userService.validateToken(token);
         Trip trip = tripService.getTripById(tripId);
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(trip);
     }
@@ -74,7 +79,9 @@ public class TripController {
      */
     @GetMapping("/room/{roomCode}")
     @ResponseStatus(HttpStatus.OK)
-    public TripGetDTO getTripByRoomCode(@PathVariable String roomCode) {
+    public TripGetDTO getTripByRoomCode(@RequestHeader(value = "Authorization", required = false) String token,
+                                        @PathVariable String roomCode) {
+        userService.validateToken(token);
         Trip trip = tripService.getTripByRoomCode(roomCode);
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(trip);
     }
@@ -103,7 +110,9 @@ public class TripController {
      */
     @GetMapping("/host/{hostId}")
     @ResponseStatus(HttpStatus.OK)
-    public List<TripGetDTO> getTripsByHostId(@PathVariable Long hostId) {
+    public List<TripGetDTO> getTripsByHostId(@RequestHeader(value = "Authorization", required = false) String token,
+                                             @PathVariable Long hostId) {
+        userService.validateToken(token);
         List<Trip> trips = tripService.getTripsByHostId(hostId);
         return trips.stream()
                 .map(DTOMapper.INSTANCE::convertEntityToTripGetDTO)
@@ -131,6 +140,38 @@ public class TripController {
     }
 
     /**
+     * Generate a shareable invite for a trip
+     * Only the host can generate an invite
+     * @param tripId the ID of the trip
+     * @param token Authorization header containing Bearer token
+     * @return the invite with room code
+     * @throws ResponseStatusException 401 if user not authenticated
+     * @throws ResponseStatusException 403 if user is not the host
+     * @throws ResponseStatusException 404 if trip not found
+     */
+    @PostMapping("/{tripId}/invite")
+    @ResponseStatus(HttpStatus.CREATED)
+    public InviteDTO generateInvite(@PathVariable Long tripId,
+                                    @RequestHeader(value = "Authorization", required = false) String token) {
+        // Validate user is authenticated
+        User authenticatedUser = userService.validateToken(token);
+
+        // Get the trip - will throw 404 if not found
+        Trip trip = tripService.getTripById(tripId);
+
+        // Check if user is the host - throw 403 if not
+        if (!trip.getHostId().equals(authenticatedUser.getId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Only the host can generate an invite for this trip"
+            );
+        }
+
+        // Return the invite with the room code
+        return new InviteDTO(trip.getRoomCode());
+    }
+
+    /**
      * Update the status of a trip (e.g., to EVALUATION or FINALIZED)
      * @param tripId the ID of the trip
      * @param newStatus the new status
@@ -138,8 +179,10 @@ public class TripController {
      */
     @PutMapping("/{tripId}/status")
     @ResponseStatus(HttpStatus.OK)
-    public TripGetDTO updateTripStatus(@PathVariable Long tripId, 
-                                        @RequestParam Trip.TripStatus newStatus) {
+    public TripGetDTO updateTripStatus(@RequestHeader(value = "Authorization", required = false) String token,
+                                       @PathVariable Long tripId,
+                                       @RequestParam Trip.TripStatus newStatus) {
+        userService.validateToken(token);
         Trip updatedTrip = tripService.updateTripStatus(tripId, newStatus);
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(updatedTrip);
     }
@@ -153,8 +196,10 @@ public class TripController {
      */
     @PutMapping("/{tripId}/finalize")
     @ResponseStatus(HttpStatus.OK)
-    public TripGetDTO setFinalDestination(@PathVariable Long tripId,
+    public TripGetDTO setFinalDestination(@RequestHeader(value = "Authorization", required = false) String token,
+                                           @PathVariable Long tripId,
                                            @RequestParam Long finalDestinationId) {
+        userService.validateToken(token);
         Trip updatedTrip = tripService.setFinalDestination(tripId, finalDestinationId);
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(updatedTrip);
     }
