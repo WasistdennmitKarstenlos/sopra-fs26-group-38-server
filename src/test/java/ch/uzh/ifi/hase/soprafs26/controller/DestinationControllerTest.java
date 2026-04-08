@@ -47,7 +47,7 @@ public class DestinationControllerTest {
         DestinationGetDTO dto = new DestinationGetDTO();
         dto.setId(11L);
         dto.setTripId(1L);
-        dto.setName("Zurich");
+        dto.setDestinationName("Zurich");
 
         Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
         Mockito.when(destinationService.getDestinations(1L)).thenReturn(List.of(dto));
@@ -57,7 +57,7 @@ public class DestinationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(11))
-                .andExpect(jsonPath("$[0].name").value("Zurich"));
+                .andExpect(jsonPath("$[0].destinationName").value("Zurich"));
     }
 
     @Test
@@ -66,12 +66,12 @@ public class DestinationControllerTest {
         user.setId(1L);
 
         DestinationPostDTO postDTO = new DestinationPostDTO();
-        postDTO.setName("Zurich");
+        postDTO.setDestinationName("Zurich");
 
         DestinationGetDTO saved = new DestinationGetDTO();
         saved.setId(11L);
         saved.setTripId(1L);
-        saved.setName("Zurich");
+        saved.setDestinationName("Zurich");
 
         Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
         Mockito.when(destinationService.createDestination(Mockito.eq(1L), Mockito.any(DestinationPostDTO.class))).thenReturn(saved);
@@ -82,6 +82,6 @@ public class DestinationControllerTest {
                         .content(new ObjectMapper().writeValueAsString(postDTO)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(11))
-                .andExpect(jsonPath("$.name").value("Zurich"));
+                .andExpect(jsonPath("$.destinationName").value("Zurich"));
     }
 }

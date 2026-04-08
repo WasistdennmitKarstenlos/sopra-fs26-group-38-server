@@ -78,17 +78,15 @@ public interface DTOMapper {
 		return status != null ? status.toString() : null;
 	}
 
-	@Mapping(source = "locationName", target = "locationName")
+	@Mapping(source = "destinationName", target = "destinationName")
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "tripId", ignore = true)
 	@Mapping(target = "proposedByUserId", ignore = true)
-	@Mapping(target = "createdAt", ignore = true)
 	Destination convertDestinationPostDTOtoEntity(DestinationPostDTO destinationPostDTO);
 
 	@Mapping(source = "id", target = "id")
 	@Mapping(source = "tripId", target = "tripId")
-	@Mapping(source = "locationName", target = "locationName")
+	@Mapping(source = "destinationName", target = "destinationName")
 	@Mapping(source = "proposedByUserId", target = "proposedByUserId")
-	@Mapping(source = "createdAt", target = "createdAt")
 	DestinationGetDTO convertEntityToDestinationGetDTO(Destination destination);
 }

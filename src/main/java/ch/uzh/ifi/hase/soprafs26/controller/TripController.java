@@ -12,7 +12,6 @@ import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
 import ch.uzh.ifi.hase.soprafs26.service.TripService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -208,7 +207,7 @@ public class TripController {
      * Add a destination proposal to a trip.
      * Only authenticated trip participants can add destinations.
      * @param tripId target trip id
-     * @param destinationPostDTO request body containing locationName
+     * @param destinationPostDTO request body containing destination name
      * @param token authorization header
      * @return created destination
      */

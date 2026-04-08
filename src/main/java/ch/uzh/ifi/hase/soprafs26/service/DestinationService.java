@@ -37,7 +37,7 @@ public class DestinationService {
 
         Destination destination = new Destination();
         destination.setTripId(tripId);
-        destination.setName(destinationPostDTO.getName().trim());
+        destination.setDestinationName(destinationPostDTO.getDestinationName().trim());
 
         return toDTO(destinationRepository.save(destination));
     }
@@ -45,7 +45,7 @@ public class DestinationService {
     public DestinationGetDTO updateDestination(Long tripId, Long destinationId, DestinationPostDTO destinationPostDTO) {
         validate(destinationPostDTO);
         Destination destination = getDestinationEntity(tripId, destinationId);
-        destination.setName(destinationPostDTO.getName().trim());
+        destination.setDestinationName(destinationPostDTO.getDestinationName().trim());
         return toDTO(destinationRepository.save(destination));
     }
 
@@ -61,7 +61,7 @@ public class DestinationService {
     }
 
     private void validate(DestinationPostDTO destinationPostDTO) {
-        if (destinationPostDTO == null || destinationPostDTO.getName() == null || destinationPostDTO.getName().trim().isEmpty()) {
+        if (destinationPostDTO == null || destinationPostDTO.getDestinationName() == null || destinationPostDTO.getDestinationName().trim().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Destination name cannot be empty");
         }
     }
@@ -70,7 +70,7 @@ public class DestinationService {
         DestinationGetDTO dto = new DestinationGetDTO();
         dto.setId(destination.getId());
         dto.setTripId(destination.getTripId());
-        dto.setName(destination.getName());
+        dto.setDestinationName(destination.getDestinationName());
         return dto;
     }
 }

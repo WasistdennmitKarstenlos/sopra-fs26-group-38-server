@@ -10,7 +10,6 @@ public class DestinationGetDTO implements Serializable {
     private Long tripId;
     private String destinationName;
     private Long proposedByUserId;
-    private Date createdAt;
 
     public Long getId() {
         return id;

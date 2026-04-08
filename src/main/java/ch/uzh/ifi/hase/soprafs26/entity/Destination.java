@@ -41,11 +41,11 @@ public class Destination implements Serializable {
     }
 
     public String getDestinationName() {
-        return locationName;
+        return destinationName;
     }
 
-    public void setDestinationName(String locationName) {
-        this.locationName = locationName;
+    public void setDestinationName(String destinationName) {
+        this.destinationName = destinationName;
     }
 
     public Long getProposedByUserId() {

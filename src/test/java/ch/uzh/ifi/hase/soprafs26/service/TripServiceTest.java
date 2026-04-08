@@ -239,21 +239,20 @@ public class TripServiceTest {
         Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
 
         Destination destinationInput = new Destination();
-        destinationInput.setLocationName("Zurich");
+        destinationInput.setDestinationName("Zurich");
 
         Destination saved = new Destination();
         saved.setId(10L);
         saved.setTripId(1L);
-        saved.setLocationName("Zurich");
+        saved.setDestinationName("Zurich");
         saved.setProposedByUserId(1L);
 
         Mockito.when(destinationRepository.save(Mockito.any())).thenReturn(saved);
-        Mockito.when(destinationRepository.findByTripIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(saved));
 
         Destination created = tripService.addDestination(1L, 1L, destinationInput);
 
         assertEquals(10L, created.getId());
-        assertEquals("Zurich", created.getLocationName());
+        assertEquals("Zurich", created.getDestinationName());
         Mockito.verify(destinationRepository, Mockito.times(1)).save(Mockito.any());
     }
 
@@ -263,7 +262,7 @@ public class TripServiceTest {
         Mockito.when(tripMembershipRepository.existsByTripIdAndUserId(1L, 99L)).thenReturn(false);
 
         Destination destinationInput = new Destination();
-        destinationInput.setLocationName("Bern");
+        destinationInput.setDestinationName("Bern");
 
         assertThrows(ResponseStatusException.class, () -> tripService.addDestination(1L, 99L, destinationInput));
     }
@@ -273,7 +272,7 @@ public class TripServiceTest {
         Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
 
         Destination destinationInput = new Destination();
-        destinationInput.setLocationName("   ");
+        destinationInput.setDestinationName("   ");
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
@@ -288,7 +287,7 @@ public class TripServiceTest {
         Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
 
         Destination destinationInput = new Destination();
-        destinationInput.setLocationName("Basel");
+        destinationInput.setDestinationName("Basel");
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
