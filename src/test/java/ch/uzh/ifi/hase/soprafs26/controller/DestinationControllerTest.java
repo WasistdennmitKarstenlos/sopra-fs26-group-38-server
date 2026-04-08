@@ -1,9 +1,12 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
+import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
+import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationService;
+import ch.uzh.ifi.hase.soprafs26.service.TripService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +31,12 @@ public class DestinationControllerTest {
     private DestinationService destinationService;
 
     @Mock
+    private TripService tripService;
+
+    @Mock
+    private DestinationRealtimeService destinationRealtimeService;
+
+    @Mock
     private UserService userService;
 
     private MockMvc mockMvc;
@@ -35,7 +44,11 @@ public class DestinationControllerTest {
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
-        DestinationController destinationController = new DestinationController(destinationService, userService);
+        DestinationController destinationController = new DestinationController(
+                destinationService,
+                tripService,
+                userService,
+                destinationRealtimeService);
         mockMvc = MockMvcBuilders.standaloneSetup(destinationController).build();
     }
 
@@ -44,13 +57,14 @@ public class DestinationControllerTest {
         User user = new User();
         user.setId(1L);
 
-        DestinationGetDTO dto = new DestinationGetDTO();
-        dto.setId(11L);
-        dto.setTripId(1L);
-        dto.setDestinationName("Zurich");
+        Destination destination = new Destination();
+        destination.setId(11L);
+        destination.setTripId(1L);
+        destination.setDestinationName("Zurich");
+        destination.setProposedByUserId(1L);
 
         Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
-        Mockito.when(destinationService.getDestinations(1L)).thenReturn(List.of(dto));
+        Mockito.when(tripService.getDestinations(1L, 1L)).thenReturn(List.of(destination));
 
         mockMvc.perform(get("/trips/1/destinations")
                         .header("Authorization", "Bearer token")
@@ -68,13 +82,15 @@ public class DestinationControllerTest {
         DestinationPostDTO postDTO = new DestinationPostDTO();
         postDTO.setDestinationName("Zurich");
 
-        DestinationGetDTO saved = new DestinationGetDTO();
+        Destination saved = new Destination();
         saved.setId(11L);
         saved.setTripId(1L);
         saved.setDestinationName("Zurich");
+        saved.setProposedByUserId(1L);
 
         Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
-        Mockito.when(destinationService.createDestination(Mockito.eq(1L), Mockito.any(DestinationPostDTO.class))).thenReturn(saved);
+        Mockito.when(tripService.addDestination(Mockito.eq(1L), Mockito.eq(1L), Mockito.any(Destination.class))).thenReturn(saved);
+        Mockito.when(tripService.getDestinations(1L, 1L)).thenReturn(List.of(saved));
 
         mockMvc.perform(post("/trips/1/destinations")
                         .header("Authorization", "Bearer token")

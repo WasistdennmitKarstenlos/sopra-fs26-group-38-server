@@ -1,9 +1,6 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
-import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripGetDTO;
@@ -201,52 +198,6 @@ public class TripController {
         userService.validateToken(token);
         Trip updatedTrip = tripService.setFinalDestination(tripId, finalDestinationId);
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(updatedTrip);
-    }
-
-    /**
-     * Add a destination proposal to a trip.
-     * Only authenticated trip participants can add destinations.
-     * @param tripId target trip id
-     * @param destinationPostDTO request body containing destination name
-     * @param token authorization header
-     * @return created destination
-     */
-    @PostMapping("/{tripId}/destinations")
-    @ResponseStatus(HttpStatus.CREATED)
-    public DestinationGetDTO addDestination(
-            @PathVariable Long tripId,
-            @RequestBody DestinationPostDTO destinationPostDTO,
-            @RequestHeader(value = "Authorization", required = false) String token) {
-        User requester = userService.validateToken(token);
-        Destination destination = DTOMapper.INSTANCE.convertDestinationPostDTOtoEntity(destinationPostDTO);
-        Destination savedDestination = tripService.addDestination(tripId, requester.getId(), destination);
-
-        if (destinationRealtimeService != null) {
-            List<DestinationGetDTO> sharedList = tripService.getDestinations(tripId, requester.getId()).stream()
-                    .map(DTOMapper.INSTANCE::convertEntityToDestinationGetDTO)
-                    .collect(Collectors.toList());
-            destinationRealtimeService.publish(tripId, sharedList);
-        }
-
-        return DTOMapper.INSTANCE.convertEntityToDestinationGetDTO(savedDestination);
-    }
-
-    /**
-     * Get shared destination proposals for a trip.
-     * Only authenticated trip participants can see the list.
-     * @param tripId target trip id
-     * @param token authorization header
-     * @return destination list
-     */
-    @GetMapping("/{tripId}/destinations")
-    @ResponseStatus(HttpStatus.OK)
-    public List<DestinationGetDTO> getDestinations(
-            @PathVariable Long tripId,
-            @RequestHeader(value = "Authorization", required = false) String token) {
-        User requester = userService.validateToken(token);
-        return tripService.getDestinations(tripId, requester.getId()).stream()
-                .map(DTOMapper.INSTANCE::convertEntityToDestinationGetDTO)
-                .collect(Collectors.toList());
     }
 
     /**

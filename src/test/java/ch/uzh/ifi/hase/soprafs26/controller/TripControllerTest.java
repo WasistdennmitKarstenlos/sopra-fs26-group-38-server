@@ -1,8 +1,6 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
-import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
@@ -24,7 +22,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -75,7 +72,7 @@ public class TripControllerTest {
         trip.setHostId(1L);
         trip.setStatus(Trip.TripStatus.ACTIVE);
 
-        List<Trip> allTrips = Collections.singletonList(trip);
+        List<Trip> allTrips = List.of(trip);
 
         // this mocks the TripService -> we define above what the tripService should
         // return when getAllTrips() is called
@@ -299,69 +296,12 @@ public class TripControllerTest {
     }
 
     @Test
-    public void addDestination_validInput_created() throws Exception {
-        DestinationPostDTO postDTO = new DestinationPostDTO();
-        postDTO.setDestinationName("Zurich");
-
-        User requester = new User();
-        requester.setId(2L);
-
-        Destination destination = new Destination();
-        destination.setId(10L);
-        destination.setTripId(1L);
-        destination.setDestinationName("Zurich");
-        destination.setProposedByUserId(2L);
-
-        given(userService.validateToken("Bearer token-1")).willReturn(requester);
-        given(tripService.addDestination(Mockito.eq(1L), Mockito.eq(2L), Mockito.any())).willReturn(destination);
-        given(tripService.getDestinations(1L, 2L)).willReturn(Collections.singletonList(destination));
-
-        MockHttpServletRequestBuilder postRequest = post("/trips/1/destinations")
-                .header("Authorization", "Bearer token-1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(new ObjectMapper().writeValueAsString(postDTO));
-
-        mockMvc.perform(postRequest)
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id", is(10)))
-                .andExpect(jsonPath("$.destinationName", is("Zurich")))
-                .andExpect(jsonPath("$.tripId", is(1)));
-
-        Mockito.verify(destinationRealtimeService, Mockito.times(1)).publish(Mockito.eq(1L), Mockito.any());
-    }
-
-    @Test
-    public void getDestinations_validToken_success() throws Exception {
-        User requester = new User();
-        requester.setId(2L);
-
-        Destination destination = new Destination();
-        destination.setId(10L);
-        destination.setTripId(1L);
-        destination.setDestinationName("Zurich");
-        destination.setProposedByUserId(2L);
-
-        given(userService.validateToken("Bearer token-1")).willReturn(requester);
-        given(tripService.getDestinations(1L, 2L)).willReturn(Collections.singletonList(destination));
-
-        MockHttpServletRequestBuilder getRequest = get("/trips/1/destinations")
-                .header("Authorization", "Bearer token-1")
-                .contentType(MediaType.APPLICATION_JSON);
-
-        mockMvc.perform(getRequest)
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].destinationName", is("Zurich")))
-                .andExpect(jsonPath("$[0].tripId", is(1)));
-    }
-
-    @Test
     public void streamDestinations_validToken_success() throws Exception {
         User requester = new User();
         requester.setId(2L);
 
         given(userService.validateToken("Bearer token-1")).willReturn(requester);
-        given(tripService.getDestinations(1L, 2L)).willReturn(Collections.emptyList());
+        given(tripService.getDestinations(1L, 2L)).willReturn(List.of());
         given(destinationRealtimeService.subscribe(1L)).willReturn(new SseEmitter(0L));
 
         MockHttpServletRequestBuilder getRequest = get("/trips/1/destinations/stream")
