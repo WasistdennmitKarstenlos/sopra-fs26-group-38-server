@@ -10,6 +10,7 @@ import ch.uzh.ifi.hase.soprafs26.service.DestinationService;
 import ch.uzh.ifi.hase.soprafs26.service.TripService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -69,6 +71,23 @@ public class DestinationController {
         }
 
         return DTOMapper.INSTANCE.convertEntityToDestinationGetDTO(savedDestination);
+    }
+
+    /**
+     * Real-time stream for destination list updates in a trip.
+     * Clients subscribe once and receive updates on each saved destination.
+     * @param tripId target trip id
+     * @param token authorization header
+     * @return SSE emitter
+     */
+    @GetMapping(value = "/trips/{tripId}/destinations/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public SseEmitter streamDestinations(
+            @PathVariable Long tripId,
+            @RequestHeader(value = "Authorization", required = false) String token) {
+        User requester = userService.validateToken(token);
+        tripService.getDestinations(tripId, requester.getId());
+        return destinationRealtimeService.subscribe(tripId);
     }
 
     @PutMapping("/trips/{tripId}/destinations/{destinationId}")

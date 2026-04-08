@@ -15,6 +15,7 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
@@ -98,5 +99,19 @@ public class DestinationControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(11))
                 .andExpect(jsonPath("$.destinationName").value("Zurich"));
+    }
+
+    @Test
+    public void streamDestinations_success() throws Exception {
+        User user = new User();
+        user.setId(1L);
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.when(tripService.getDestinations(1L, 1L)).thenReturn(List.of());
+        Mockito.when(destinationRealtimeService.subscribe(1L)).thenReturn(new SseEmitter(0L));
+
+        mockMvc.perform(get("/trips/1/destinations/stream")
+                        .header("Authorization", "Bearer token"))
+                .andExpect(status().isOk());
     }
 }
