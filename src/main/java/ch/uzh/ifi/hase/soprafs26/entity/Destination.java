@@ -19,18 +19,10 @@ public class Destination implements Serializable {
     private Long tripId;
 
     @Column(nullable = false)
-    private String locationName;
+    private String destinationName;
 
     @Column(nullable = false)
     private Long proposedByUserId;
-
-    @Column(nullable = false, updatable = false)
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date createdAt;
-
-    public Destination() {
-        this.createdAt = new Date();
-    }
 
     public Long getId() {
         return id;
@@ -48,12 +40,12 @@ public class Destination implements Serializable {
         this.tripId = tripId;
     }
 
-    public String getLocationName() {
-        return locationName;
+    public String getDestinationName() {
+        return destinationName;
     }
 
-    public void setLocationName(String locationName) {
-        this.locationName = locationName;
+    public void setDestinationName(String destinationName) {
+        this.destinationName = destinationName;
     }
 
     public Long getProposedByUserId() {
@@ -63,12 +55,5 @@ public class Destination implements Serializable {
     public void setProposedByUserId(Long proposedByUserId) {
         this.proposedByUserId = proposedByUserId;
     }
-
-    public Date getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
-    }
 }
+

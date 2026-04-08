@@ -153,7 +153,7 @@ public class TripService {
     public List<Destination> getDestinations(Long tripId, Long userId) {
         getTripById(tripId);
         ensureParticipant(tripId, userId);
-        return destinationRepository.findByTripIdOrderByCreatedAtAsc(tripId);
+        return destinationRepository.findByTripIdOrderByIdDesc(tripId);
     }
 
     /**
@@ -262,9 +262,9 @@ public class TripService {
     }
 
     private void validateDestinationInput(Destination destination) {
-        if (destination.getLocationName() == null || destination.getLocationName().trim().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Location name cannot be empty");
+        if (destination.getDestinationName() == null || destination.getDestinationName().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Destination name cannot be empty");
         }
-        destination.setLocationName(destination.getLocationName().trim());
+        destination.setDestinationName(destination.getDestinationName().trim());
     }
 }

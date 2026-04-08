@@ -51,11 +51,11 @@ public class DTOMapperTest {
 	@Test
 	public void testCreateDestination_fromDestinationPostDTO_toEntity_success() {
 		DestinationPostDTO destinationPostDTO = new DestinationPostDTO();
-		destinationPostDTO.setLocationName("Zurich");
+		destinationPostDTO.setDestinationName("Zurich");
 
 		Destination destination = DTOMapper.INSTANCE.convertDestinationPostDTOtoEntity(destinationPostDTO);
 
-		assertEquals(destinationPostDTO.getLocationName(), destination.getLocationName());
+		assertEquals(destinationPostDTO.getDestinationName(), destination.getDestinationName());
 	}
 
 	@Test
@@ -63,14 +63,14 @@ public class DTOMapperTest {
 		Destination destination = new Destination();
 		destination.setId(1L);
 		destination.setTripId(2L);
-		destination.setLocationName("Bern");
+		destination.setDestinationName("Bern");
 		destination.setProposedByUserId(3L);
 
 		DestinationGetDTO destinationGetDTO = DTOMapper.INSTANCE.convertEntityToDestinationGetDTO(destination);
 
 		assertEquals(destination.getId(), destinationGetDTO.getId());
 		assertEquals(destination.getTripId(), destinationGetDTO.getTripId());
-		assertEquals(destination.getLocationName(), destinationGetDTO.getLocationName());
+		assertEquals(destination.getDestinationName(), destinationGetDTO.getDestinationName());
 		assertEquals(destination.getProposedByUserId(), destinationGetDTO.getProposedByUserId());
 	}
 }
