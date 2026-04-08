@@ -1,6 +1,7 @@
 package ch.uzh.ifi.hase.soprafs26.rest.dto;
 
 import java.io.Serializable;
+import java.util.List;
 
 public class DestinationGetDTO implements Serializable {
 
@@ -10,6 +11,7 @@ public class DestinationGetDTO implements Serializable {
     private Long tripId;
     private String destinationName;
     private Long proposedByUserId;
+    private List<ActivitySearchResultDTO> activities;
 
     public Long getId() {
         return id;
@@ -41,5 +43,13 @@ public class DestinationGetDTO implements Serializable {
 
     public void setProposedByUserId(Long proposedByUserId) {
         this.proposedByUserId = proposedByUserId;
+    }
+
+    public List<ActivitySearchResultDTO> getActivities() {
+        return activities;
+    }
+
+    public void setActivities(List<ActivitySearchResultDTO> activities) {
+        this.activities = activities;
     }
 }

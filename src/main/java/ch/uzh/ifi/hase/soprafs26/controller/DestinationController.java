@@ -1,10 +1,13 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
+import ch.uzh.ifi.hase.soprafs26.entity.Activity;
 import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
+import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationService;
 import ch.uzh.ifi.hase.soprafs26.service.TripService;
@@ -23,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @RestController
@@ -30,16 +34,19 @@ public class DestinationController {
 
     private final DestinationService destinationService;
     private final TripService tripService;
+    private final ActivityManagementService activityManagementService;
     private final UserService userService;
     private final DestinationRealtimeService destinationRealtimeService;
 
     public DestinationController(
             DestinationService destinationService,
             TripService tripService,
+            ActivityManagementService activityManagementService,
             UserService userService,
             DestinationRealtimeService destinationRealtimeService) {
         this.destinationService = destinationService;
         this.tripService = tripService;
+        this.activityManagementService = activityManagementService;
         this.userService = userService;
         this.destinationRealtimeService = destinationRealtimeService;
     }
@@ -49,9 +56,7 @@ public class DestinationController {
     public List<DestinationGetDTO> getDestinations(@PathVariable("tripId") Long tripId,
                                                    @RequestHeader(value = "Authorization", required = false) String token) {
         User requester = userService.validateToken(token);
-        return tripService.getDestinations(tripId, requester.getId()).stream()
-                .map(DTOMapper.INSTANCE::convertEntityToDestinationGetDTO)
-                .collect(Collectors.toList());
+        return buildSharedDestinationList(tripId, requester.getId());
     }
 
     @PostMapping("/trips/{tripId}/destinations")
@@ -64,13 +69,13 @@ public class DestinationController {
         Destination savedDestination = tripService.addDestination(tripId, requester.getId(), destination);
 
         if (destinationRealtimeService != null) {
-            List<DestinationGetDTO> sharedList = tripService.getDestinations(tripId, requester.getId()).stream()
-                    .map(DTOMapper.INSTANCE::convertEntityToDestinationGetDTO)
-                    .collect(Collectors.toList());
+            List<DestinationGetDTO> sharedList = buildSharedDestinationList(tripId, requester.getId());
             destinationRealtimeService.publish(tripId, sharedList);
         }
 
-        return DTOMapper.INSTANCE.convertEntityToDestinationGetDTO(savedDestination);
+        DestinationGetDTO dto = DTOMapper.INSTANCE.convertEntityToDestinationGetDTO(savedDestination);
+        dto.setActivities(buildActivities(tripId, savedDestination.getId()));
+        return dto;
     }
 
     /**
@@ -109,5 +114,38 @@ public class DestinationController {
                                   @RequestHeader(value = "Authorization", required = false) String token) {
         userService.validateToken(token);
         destinationService.deleteDestination(tripId, destinationId);
+    }
+
+    private List<DestinationGetDTO> buildSharedDestinationList(Long tripId, Long requesterId) {
+        return tripService.getDestinations(tripId, requesterId).stream()
+                .filter(Objects::nonNull)
+                .map(destination -> {
+                    DestinationGetDTO dto = DTOMapper.INSTANCE.convertEntityToDestinationGetDTO(destination);
+                    dto.setActivities(buildActivities(tripId, destination.getId()));
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private List<ActivitySearchResultDTO> buildActivities(Long tripId, Long destinationId) {
+        return activityManagementService.getSelectedActivities(tripId, destinationId).stream()
+                .map(DestinationController::toSearchResultDTO)
+                .toList();
+    }
+
+    private static ActivitySearchResultDTO toSearchResultDTO(Activity activity) {
+        ActivitySearchResultDTO resultDTO = new ActivitySearchResultDTO();
+        if (activity == null) {
+            return resultDTO;
+        }
+        resultDTO.setId(activity.getId());
+        resultDTO.setPlaceId(activity.getPlaceId());
+        resultDTO.setName(activity.getName());
+        resultDTO.setAddress(activity.getAddress());
+        resultDTO.setRating(activity.getRating());
+        resultDTO.setPhotoUrl(activity.getPhotoUrl());
+        resultDTO.setLatitude(activity.getLatitude());
+        resultDTO.setLongitude(activity.getLongitude());
+        return resultDTO;
     }
 }

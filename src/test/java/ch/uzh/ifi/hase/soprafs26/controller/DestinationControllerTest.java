@@ -3,6 +3,7 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
+import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationService;
 import ch.uzh.ifi.hase.soprafs26.service.TripService;
@@ -34,6 +35,9 @@ public class DestinationControllerTest {
     private TripService tripService;
 
     @Mock
+    private ActivityManagementService activityManagementService;
+
+    @Mock
     private DestinationRealtimeService destinationRealtimeService;
 
     @Mock
@@ -47,6 +51,7 @@ public class DestinationControllerTest {
         DestinationController destinationController = new DestinationController(
                 destinationService,
                 tripService,
+                activityManagementService,
                 userService,
                 destinationRealtimeService);
         mockMvc = MockMvcBuilders.standaloneSetup(destinationController).build();
@@ -65,6 +70,7 @@ public class DestinationControllerTest {
 
         Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
         Mockito.when(tripService.getDestinations(1L, 1L)).thenReturn(List.of(destination));
+        Mockito.when(activityManagementService.getSelectedActivities(1L, 11L)).thenReturn(List.of());
 
         mockMvc.perform(get("/trips/1/destinations")
                         .header("Authorization", "Bearer token")
@@ -91,6 +97,7 @@ public class DestinationControllerTest {
         Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
         Mockito.when(tripService.addDestination(Mockito.eq(1L), Mockito.eq(1L), Mockito.any(Destination.class))).thenReturn(saved);
         Mockito.when(tripService.getDestinations(1L, 1L)).thenReturn(List.of(saved));
+        Mockito.when(activityManagementService.getSelectedActivities(1L, 11L)).thenReturn(List.of());
 
         mockMvc.perform(post("/trips/1/destinations")
                         .header("Authorization", "Bearer token")
