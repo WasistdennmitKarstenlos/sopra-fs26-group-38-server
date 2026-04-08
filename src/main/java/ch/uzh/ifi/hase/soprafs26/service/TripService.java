@@ -1,10 +1,13 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
+import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.entity.TripMembership;
+import ch.uzh.ifi.hase.soprafs26.repository.DestinationRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.TripRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.TripMembershipRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,10 +22,16 @@ public class TripService {
 
     private final Logger log = LoggerFactory.getLogger(TripService.class);
     private final TripRepository tripRepository;
+    private final DestinationRepository destinationRepository;
+    private final TripMembershipRepository tripMembershipRepository;
 
-    @Autowired
-    public TripService(TripRepository tripRepository) {
+    public TripService(
+            TripRepository tripRepository,
+            DestinationRepository destinationRepository,
+            TripMembershipRepository tripMembershipRepository) {
         this.tripRepository = tripRepository;
+        this.destinationRepository = destinationRepository;
+        this.tripMembershipRepository = tripMembershipRepository;
     }
 
     /**
@@ -92,9 +101,59 @@ public class TripService {
 
         // Save to database
         Trip savedTrip = tripRepository.save(trip);
+        tripMembershipRepository.save(new TripMembership(savedTrip.getId(), savedTrip.getHostId()));
         log.info("Trip created successfully with id: {}, room code: {}", savedTrip.getId(), roomCode);
 
         return savedTrip;
+    }
+
+    /**
+     * Join a trip by room code. Creates membership if it does not exist yet.
+     * @param roomCode room code for the trip
+     * @param userId logged-in user id
+     * @return the joined trip
+     */
+    public Trip joinTripByRoomCode(String roomCode, Long userId) {
+        Trip trip = getTripByRoomCode(roomCode);
+
+        if (!tripMembershipRepository.existsByTripIdAndUserId(trip.getId(), userId)) {
+            tripMembershipRepository.save(new TripMembership(trip.getId(), userId));
+        }
+
+        return trip;
+    }
+    /**
+     * Add destination proposal to a trip for a participant.
+     * @param tripId target trip id
+     * @param userId authenticated user id
+     * @param destination destination input
+     * @return created destination
+     */
+    public Destination addDestination(Long tripId, Long userId, Destination destination) {
+        Trip trip = getTripById(tripId);
+        validateDestinationInput(destination);
+        ensureParticipant(tripId, userId);
+
+        if (trip.getStatus() != Trip.TripStatus.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Destinations can only be added while trip is ACTIVE");
+        }
+
+        destination.setTripId(tripId);
+        destination.setProposedByUserId(userId);
+
+        return destinationRepository.save(destination);
+    }
+
+    /**
+     * Get shared destinations of a trip for participants.
+     * @param tripId target trip id
+     * @param userId authenticated user id
+     * @return ordered list of destinations
+     */
+    public List<Destination> getDestinations(Long tripId, Long userId) {
+        getTripById(tripId);
+        ensureParticipant(tripId, userId);
+        return destinationRepository.findByTripIdOrderByCreatedAtAsc(tripId);
     }
 
     /**
@@ -194,5 +253,18 @@ public class TripService {
         }
 
         return roomCode;
+    }
+
+    private void ensureParticipant(Long tripId, Long userId) {
+        if (!tripMembershipRepository.existsByTripIdAndUserId(tripId, userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not a participant of this trip");
+        }
+    }
+
+    private void validateDestinationInput(Destination destination) {
+        if (destination.getLocationName() == null || destination.getLocationName().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Location name cannot be empty");
+        }
+        destination.setLocationName(destination.getLocationName().trim());
     }
 }

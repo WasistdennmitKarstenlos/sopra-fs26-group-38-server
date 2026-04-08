@@ -1,16 +1,22 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
+import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.InviteDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
+import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
 import ch.uzh.ifi.hase.soprafs26.service.TripService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -27,11 +33,15 @@ public class TripController {
 
     private final TripService tripService;
     private final UserService userService;
+    private final DestinationRealtimeService destinationRealtimeService;
 
-    @Autowired
-    public TripController(TripService tripService, UserService userService) {
+    public TripController(
+            TripService tripService,
+            UserService userService,
+            DestinationRealtimeService destinationRealtimeService) {
         this.tripService = tripService;
         this.userService = userService;
+        this.destinationRealtimeService = destinationRealtimeService;
     }
 
     /**
@@ -40,7 +50,8 @@ public class TripController {
      */
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<TripGetDTO> getAllTrips() {
+    public List<TripGetDTO> getAllTrips(@RequestHeader(value = "Authorization", required = false) String token) {
+        userService.validateToken(token);
         List<Trip> trips = tripService.getAllTrips();
         return trips.stream()
                 .map(DTOMapper.INSTANCE::convertEntityToTripGetDTO)
@@ -54,7 +65,8 @@ public class TripController {
      */
     @GetMapping("/{tripId}")
     @ResponseStatus(HttpStatus.OK)
-    public TripGetDTO getTripById(@PathVariable Long tripId) {
+    public TripGetDTO getTripById(@RequestHeader(value = "Authorization", required = false) String token,@PathVariable Long tripId) {
+        userService.validateToken(token);
         Trip trip = tripService.getTripById(tripId);
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(trip);
     }
@@ -67,8 +79,27 @@ public class TripController {
      */
     @GetMapping("/room/{roomCode}")
     @ResponseStatus(HttpStatus.OK)
-    public TripGetDTO getTripByRoomCode(@PathVariable String roomCode) {
+    public TripGetDTO getTripByRoomCode(@RequestHeader(value = "Authorization", required = false) String token,
+                                        @PathVariable String roomCode) {
+        userService.validateToken(token);
         Trip trip = tripService.getTripByRoomCode(roomCode);
+        return DTOMapper.INSTANCE.convertEntityToTripGetDTO(trip);
+    }
+
+    /**
+     * Join a trip using a room code.
+     * Requires authentication and records membership for destination permissions.
+     * @param roomCode room code to join
+     * @param token authorization header
+     * @return joined trip details
+     */
+    @PostMapping("/join/{roomCode}")
+    @ResponseStatus(HttpStatus.OK)
+    public TripGetDTO joinTripByRoomCode(
+            @PathVariable String roomCode,
+            @RequestHeader(value = "Authorization", required = false) String token) {
+        User requester = userService.validateToken(token);
+        Trip trip = tripService.joinTripByRoomCode(roomCode, requester.getId());
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(trip);
     }
 
@@ -79,7 +110,9 @@ public class TripController {
      */
     @GetMapping("/host/{hostId}")
     @ResponseStatus(HttpStatus.OK)
-    public List<TripGetDTO> getTripsByHostId(@PathVariable Long hostId) {
+    public List<TripGetDTO> getTripsByHostId(@RequestHeader(value = "Authorization", required = false) String token,
+                                             @PathVariable Long hostId) {
+        userService.validateToken(token);
         List<Trip> trips = tripService.getTripsByHostId(hostId);
         return trips.stream()
                 .map(DTOMapper.INSTANCE::convertEntityToTripGetDTO)
@@ -146,8 +179,10 @@ public class TripController {
      */
     @PutMapping("/{tripId}/status")
     @ResponseStatus(HttpStatus.OK)
-    public TripGetDTO updateTripStatus(@PathVariable Long tripId, 
-                                        @RequestParam Trip.TripStatus newStatus) {
+    public TripGetDTO updateTripStatus(@RequestHeader(value = "Authorization", required = false) String token,
+                                       @PathVariable Long tripId,
+                                       @RequestParam Trip.TripStatus newStatus) {
+        userService.validateToken(token);
         Trip updatedTrip = tripService.updateTripStatus(tripId, newStatus);
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(updatedTrip);
     }
@@ -161,9 +196,74 @@ public class TripController {
      */
     @PutMapping("/{tripId}/finalize")
     @ResponseStatus(HttpStatus.OK)
-    public TripGetDTO setFinalDestination(@PathVariable Long tripId,
+    public TripGetDTO setFinalDestination(@RequestHeader(value = "Authorization", required = false) String token,
+                                           @PathVariable Long tripId,
                                            @RequestParam Long finalDestinationId) {
+        userService.validateToken(token);
         Trip updatedTrip = tripService.setFinalDestination(tripId, finalDestinationId);
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(updatedTrip);
+    }
+
+    /**
+     * Add a destination proposal to a trip.
+     * Only authenticated trip participants can add destinations.
+     * @param tripId target trip id
+     * @param destinationPostDTO request body containing locationName
+     * @param token authorization header
+     * @return created destination
+     */
+    @PostMapping("/{tripId}/destinations")
+    @ResponseStatus(HttpStatus.CREATED)
+    public DestinationGetDTO addDestination(
+            @PathVariable Long tripId,
+            @RequestBody DestinationPostDTO destinationPostDTO,
+            @RequestHeader(value = "Authorization", required = false) String token) {
+        User requester = userService.validateToken(token);
+        Destination destination = DTOMapper.INSTANCE.convertDestinationPostDTOtoEntity(destinationPostDTO);
+        Destination savedDestination = tripService.addDestination(tripId, requester.getId(), destination);
+
+        if (destinationRealtimeService != null) {
+            List<DestinationGetDTO> sharedList = tripService.getDestinations(tripId, requester.getId()).stream()
+                    .map(DTOMapper.INSTANCE::convertEntityToDestinationGetDTO)
+                    .collect(Collectors.toList());
+            destinationRealtimeService.publish(tripId, sharedList);
+        }
+
+        return DTOMapper.INSTANCE.convertEntityToDestinationGetDTO(savedDestination);
+    }
+
+    /**
+     * Get shared destination proposals for a trip.
+     * Only authenticated trip participants can see the list.
+     * @param tripId target trip id
+     * @param token authorization header
+     * @return destination list
+     */
+    @GetMapping("/{tripId}/destinations")
+    @ResponseStatus(HttpStatus.OK)
+    public List<DestinationGetDTO> getDestinations(
+            @PathVariable Long tripId,
+            @RequestHeader(value = "Authorization", required = false) String token) {
+        User requester = userService.validateToken(token);
+        return tripService.getDestinations(tripId, requester.getId()).stream()
+                .map(DTOMapper.INSTANCE::convertEntityToDestinationGetDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Real-time stream for destination list updates in a trip.
+     * Clients subscribe once and receive updates on each saved destination.
+     * @param tripId target trip id
+     * @param token authorization header
+     * @return SSE emitter
+     */
+    @GetMapping(value = "/{tripId}/destinations/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public SseEmitter streamDestinations(
+            @PathVariable Long tripId,
+            @RequestHeader(value = "Authorization", required = false) String token) {
+        User requester = userService.validateToken(token);
+        tripService.getDestinations(tripId, requester.getId());
+        return destinationRealtimeService.subscribe(tripId);
     }
 }

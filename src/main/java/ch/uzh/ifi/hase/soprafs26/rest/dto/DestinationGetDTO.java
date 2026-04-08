@@ -8,7 +8,9 @@ public class DestinationGetDTO implements Serializable {
 
     private Long id;
     private Long tripId;
-    private String name;
+    private String destinationName;
+    private Long proposedByUserId;
+    private Date createdAt;
 
     public Long getId() {
         return id;
@@ -26,11 +28,19 @@ public class DestinationGetDTO implements Serializable {
         this.tripId = tripId;
     }
 
-    public String getName() {
-        return name;
+    public String getDestinationName() {
+        return destinationName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setDestinationName(String destinationName) {
+        this.destinationName = destinationName;
+    }
+
+    public Long getProposedByUserId() {
+        return proposedByUserId;
+    }
+
+    public void setProposedByUserId(Long proposedByUserId) {
+        this.proposedByUserId = proposedByUserId;
     }
 }

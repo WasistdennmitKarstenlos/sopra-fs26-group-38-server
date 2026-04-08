@@ -6,13 +6,13 @@ public class DestinationPostDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private String name;
+    private String destinationName;
 
-    public String getName() {
-        return name;
+    public String getDestinationName() {
+        return destinationName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setDestinationName(String destinationName) {
+        this.destinationName = destinationName;
     }
 }
