@@ -3,7 +3,10 @@ package ch.uzh.ifi.hase.soprafs26.rest.mapper;
 import org.junit.jupiter.api.Test;
 
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
+import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
 
@@ -43,5 +46,31 @@ public class DTOMapperTest {
 		assertEquals(user.getId(), userGetDTO.getId());
 		assertEquals(user.getUsername(), userGetDTO.getUsername());
 		assertEquals(user.getStatus(), userGetDTO.getStatus());
+	}
+
+	@Test
+	public void testCreateDestination_fromDestinationPostDTO_toEntity_success() {
+		DestinationPostDTO destinationPostDTO = new DestinationPostDTO();
+		destinationPostDTO.setLocationName("Zurich");
+
+		Destination destination = DTOMapper.INSTANCE.convertDestinationPostDTOtoEntity(destinationPostDTO);
+
+		assertEquals(destinationPostDTO.getLocationName(), destination.getLocationName());
+	}
+
+	@Test
+	public void testGetDestination_fromEntity_toDestinationGetDTO_success() {
+		Destination destination = new Destination();
+		destination.setId(1L);
+		destination.setTripId(2L);
+		destination.setLocationName("Bern");
+		destination.setProposedByUserId(3L);
+
+		DestinationGetDTO destinationGetDTO = DTOMapper.INSTANCE.convertEntityToDestinationGetDTO(destination);
+
+		assertEquals(destination.getId(), destinationGetDTO.getId());
+		assertEquals(destination.getTripId(), destinationGetDTO.getTripId());
+		assertEquals(destination.getLocationName(), destinationGetDTO.getLocationName());
+		assertEquals(destination.getProposedByUserId(), destinationGetDTO.getProposedByUserId());
 	}
 }

@@ -5,12 +5,14 @@ import org.mapstruct.factory.Mappers;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
-import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserRegisterDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
 
 /**
  * DTOMapper
@@ -30,6 +32,11 @@ public interface DTOMapper {
 
 	@Mapping(source = "username", target = "username")
 	@Mapping(source = "password", target = "password")
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "token", ignore = true)
+	@Mapping(target = "status", ignore = true)
+	@Mapping(target = "creationDate", ignore = true)
+	@Mapping(target = "bio", ignore = true)
 	User convertUserPostDTOtoEntity(UserPostDTO userPostDTO);
 
 	@Mapping(source = "id", target = "id")
@@ -43,7 +50,17 @@ public interface DTOMapper {
     @Mapping(source = "username", target = "username")
     @Mapping(source = "password", target = "password")
 	@Mapping(source = "bio", target = "bio")
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "token", ignore = true)
+	@Mapping(target = "status", ignore = true)
+	@Mapping(target = "creationDate", ignore = true)
 	User convertUserRegisterDTOtoEntity(UserRegisterDTO userRegisterDTO);
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "roomCode", ignore = true)
+	@Mapping(target = "hostId", ignore = true)
+	@Mapping(target = "creationDate", ignore = true)
+	@Mapping(target = "status", ignore = true)
+	@Mapping(target = "finalDestinationId", ignore = true)
 	@Mapping(source = "name", target = "name")
 	Trip convertTripPostDTOtoEntity(TripPostDTO tripPostDTO);
 
@@ -60,4 +77,18 @@ public interface DTOMapper {
 	default String tripStatusToString(Trip.TripStatus status) {
 		return status != null ? status.toString() : null;
 	}
+
+	@Mapping(source = "locationName", target = "locationName")
+	@Mapping(target = "id", ignore = true)
+	@Mapping(target = "tripId", ignore = true)
+	@Mapping(target = "proposedByUserId", ignore = true)
+	@Mapping(target = "createdAt", ignore = true)
+	Destination convertDestinationPostDTOtoEntity(DestinationPostDTO destinationPostDTO);
+
+	@Mapping(source = "id", target = "id")
+	@Mapping(source = "tripId", target = "tripId")
+	@Mapping(source = "locationName", target = "locationName")
+	@Mapping(source = "proposedByUserId", target = "proposedByUserId")
+	@Mapping(source = "createdAt", target = "createdAt")
+	DestinationGetDTO convertEntityToDestinationGetDTO(Destination destination);
 }
