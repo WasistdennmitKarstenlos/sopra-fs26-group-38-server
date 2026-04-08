@@ -40,7 +40,7 @@ public class Activity implements Serializable {
     @Column
     private Double rating;
 
-    @Column
+    @Column(length = 2048)
     private String photoUrl;
 
     @Column
