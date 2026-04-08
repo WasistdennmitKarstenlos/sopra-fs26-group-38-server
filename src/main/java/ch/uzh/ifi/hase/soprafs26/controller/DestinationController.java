@@ -78,7 +78,9 @@ public class DestinationController {
                                                @RequestBody DestinationPostDTO destinationPostDTO,
                                                @RequestHeader(value = "Authorization", required = false) String token) {
         userService.validateToken(token);
-        return destinationService.updateDestination(tripId, destinationId, destinationPostDTO);
+        Destination update = DTOMapper.INSTANCE.convertDestinationPostDTOtoEntity(destinationPostDTO);
+        Destination saved = destinationService.updateDestination(tripId, destinationId, update);
+        return DTOMapper.INSTANCE.convertEntityToDestinationGetDTO(saved);
     }
 
     @DeleteMapping("/trips/{tripId}/destinations/{destinationId}")

@@ -2,7 +2,6 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationService;
