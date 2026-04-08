@@ -1,5 +1,6 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
+import ch.uzh.ifi.hase.soprafs26.entity.Activity;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
@@ -45,7 +46,9 @@ public class ActivityController {
         userService.validateToken(token);
 
         if (query == null || query.trim().isEmpty()) {
-            return activityManagementService.getSelectedActivities(tripId, destinationId);
+            return activityManagementService.getSelectedActivities(tripId, destinationId).stream()
+                    .map(ActivityController::toSearchResultDTO)
+                    .toList();
         }
 
         return activitySearchService.searchActivities(tripId, destinationId, query, location, radius);
@@ -58,7 +61,9 @@ public class ActivityController {
                                                @RequestBody ActivityPostDTO activityPostDTO,
                                                @RequestHeader(value = "Authorization", required = false) String token) {
         userService.validateToken(token);
-        return activityManagementService.addActivity(tripId, destinationId, activityPostDTO);
+        Activity activity = toActivityEntity(activityPostDTO);
+        Activity saved = activityManagementService.addActivity(tripId, destinationId, activity);
+        return toSearchResultDTO(saved);
     }
 
     @PutMapping("/trips/{tripId}/destinations/{destinationId}/activities/{activityId}")
@@ -69,7 +74,9 @@ public class ActivityController {
                                                   @RequestBody ActivityPostDTO activityPostDTO,
                                                   @RequestHeader(value = "Authorization", required = false) String token) {
         userService.validateToken(token);
-        return activityManagementService.updateActivity(tripId, destinationId, activityId, activityPostDTO);
+        Activity update = toActivityEntity(activityPostDTO);
+        Activity saved = activityManagementService.updateActivity(tripId, destinationId, activityId, update);
+        return toSearchResultDTO(saved);
     }
 
     @DeleteMapping("/trips/{tripId}/destinations/{destinationId}/activities/{activityId}")
@@ -90,5 +97,37 @@ public class ActivityController {
                                                                 @RequestHeader(value = "Authorization", required = false) String token) {
         userService.validateToken(token);
         return activitySearchService.searchActivities(null, null, query, location, radius);
+    }
+
+    private static Activity toActivityEntity(ActivityPostDTO activityPostDTO) {
+        // Prefer MapStruct if mappings are added later.
+        Activity activity = new Activity();
+        if (activityPostDTO == null) {
+            return activity;
+        }
+        activity.setPlaceId(activityPostDTO.getPlaceId());
+        activity.setName(activityPostDTO.getName());
+        activity.setAddress(activityPostDTO.getAddress());
+        activity.setRating(activityPostDTO.getRating());
+        activity.setPhotoUrl(activityPostDTO.getPhotoUrl());
+        activity.setLatitude(activityPostDTO.getLatitude());
+        activity.setLongitude(activityPostDTO.getLongitude());
+        return activity;
+    }
+
+    private static ActivitySearchResultDTO toSearchResultDTO(Activity activity) {
+        ActivitySearchResultDTO resultDTO = new ActivitySearchResultDTO();
+        if (activity == null) {
+            return resultDTO;
+        }
+        resultDTO.setId(activity.getId());
+        resultDTO.setPlaceId(activity.getPlaceId());
+        resultDTO.setName(activity.getName());
+        resultDTO.setAddress(activity.getAddress());
+        resultDTO.setRating(activity.getRating());
+        resultDTO.setPhotoUrl(activity.getPhotoUrl());
+        resultDTO.setLatitude(activity.getLatitude());
+        resultDTO.setLongitude(activity.getLongitude());
+        return resultDTO;
     }
 }

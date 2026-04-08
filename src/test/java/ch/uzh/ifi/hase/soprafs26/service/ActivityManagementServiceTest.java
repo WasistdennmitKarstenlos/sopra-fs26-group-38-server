@@ -3,8 +3,6 @@ package ch.uzh.ifi.hase.soprafs26.service;
 import ch.uzh.ifi.hase.soprafs26.entity.Activity;
 import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityPostDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -37,12 +35,12 @@ public class ActivityManagementServiceTest {
 
     @Test
     public void addActivity_validInput_success() {
-        ActivityPostDTO postDTO = new ActivityPostDTO();
-        postDTO.setPlaceId("place-1");
-        postDTO.setName("City Museum");
-        postDTO.setAddress("Main Street 1");
-        postDTO.setRating(4.5);
-        postDTO.setPhotoUrl("https://example.com/photo.jpg");
+        Activity input = new Activity();
+        input.setPlaceId("place-1");
+        input.setName("City Museum");
+        input.setAddress("Main Street 1");
+        input.setRating(4.5);
+        input.setPhotoUrl("https://example.com/photo.jpg");
 
         Activity saved = new Activity();
         saved.setId(1L);
@@ -63,7 +61,7 @@ public class ActivityManagementServiceTest {
                 .thenReturn(Optional.empty());
         Mockito.when(activityRepository.save(Mockito.any(Activity.class))).thenReturn(saved);
 
-        ActivitySearchResultDTO result = activityManagementService.addActivity(1L, 2L, postDTO);
+        Activity result = activityManagementService.addActivity(1L, 2L, input);
 
         assertEquals("place-1", result.getPlaceId());
         assertEquals("City Museum", result.getName());
@@ -72,9 +70,9 @@ public class ActivityManagementServiceTest {
 
     @Test
     public void addActivity_duplicate_throwsConflict() {
-        ActivityPostDTO postDTO = new ActivityPostDTO();
-        postDTO.setPlaceId("place-1");
-        postDTO.setName("City Museum");
+        Activity input = new Activity();
+        input.setPlaceId("place-1");
+        input.setName("City Museum");
 
         Destination destination = new Destination();
         destination.setId(2L);
@@ -84,7 +82,7 @@ public class ActivityManagementServiceTest {
         Mockito.when(activityRepository.findByTripIdAndDestinationIdAndPlaceId(1L, 2L, "place-1"))
                 .thenReturn(Optional.of(new Activity()));
 
-        assertThrows(ResponseStatusException.class, () -> activityManagementService.addActivity(1L, 2L, postDTO));
+        assertThrows(ResponseStatusException.class, () -> activityManagementService.addActivity(1L, 2L, input));
     }
 
     @Test
@@ -103,7 +101,7 @@ public class ActivityManagementServiceTest {
         Mockito.when(activityRepository.findByTripIdAndDestinationIdOrderByIdDesc(1L, 2L))
                 .thenReturn(List.of(activity));
 
-        List<ActivitySearchResultDTO> result = activityManagementService.getSelectedActivities(1L, 2L);
+        List<Activity> result = activityManagementService.getSelectedActivities(1L, 2L);
 
         assertEquals(1, result.size());
         assertEquals("place-1", result.get(0).getPlaceId());
@@ -112,9 +110,9 @@ public class ActivityManagementServiceTest {
 
     @Test
     public void updateActivity_success() {
-        ActivityPostDTO postDTO = new ActivityPostDTO();
-        postDTO.setPlaceId("place-1");
-        postDTO.setName("City Museum Updated");
+        Activity input = new Activity();
+        input.setPlaceId("place-1");
+        input.setName("City Museum Updated");
 
         Activity existing = new Activity();
         existing.setId(10L);
@@ -131,7 +129,7 @@ public class ActivityManagementServiceTest {
         Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(10L, 1L, 2L)).thenReturn(Optional.of(existing));
         Mockito.when(activityRepository.save(Mockito.any(Activity.class))).thenReturn(existing);
 
-        ActivitySearchResultDTO result = activityManagementService.updateActivity(1L, 2L, 10L, postDTO);
+        Activity result = activityManagementService.updateActivity(1L, 2L, 10L, input);
         assertEquals("City Museum Updated", result.getName());
     }
 

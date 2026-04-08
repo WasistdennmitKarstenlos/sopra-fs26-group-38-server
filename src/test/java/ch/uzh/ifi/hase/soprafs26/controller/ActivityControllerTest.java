@@ -1,5 +1,6 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
+import ch.uzh.ifi.hase.soprafs26.entity.Activity;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
@@ -83,12 +84,13 @@ public class ActivityControllerTest {
         User user = new User();
         user.setId(1L);
 
-        ActivitySearchResultDTO resultDTO = new ActivitySearchResultDTO();
-        resultDTO.setPlaceId("saved-place");
-        resultDTO.setName("Saved Place");
+        Activity activity = new Activity();
+        activity.setId(10L);
+        activity.setPlaceId("saved-place");
+        activity.setName("Saved Place");
 
         Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
-        Mockito.when(activityManagementService.getSelectedActivities(1L, 2L)).thenReturn(List.of(resultDTO));
+        Mockito.when(activityManagementService.getSelectedActivities(1L, 2L)).thenReturn(List.of(activity));
 
         try {
             mockMvc.perform(get("/trips/1/destinations/2/activities")
@@ -111,13 +113,14 @@ public class ActivityControllerTest {
         postDTO.setName("City Museum");
         postDTO.setAddress("Main Street 1");
 
-        ActivitySearchResultDTO savedDTO = new ActivitySearchResultDTO();
-        savedDTO.setPlaceId("place-1");
-        savedDTO.setName("City Museum");
+        Activity saved = new Activity();
+        saved.setId(10L);
+        saved.setPlaceId("place-1");
+        saved.setName("City Museum");
 
         Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
-        Mockito.when(activityManagementService.addActivity(Mockito.eq(1L), Mockito.eq(2L), Mockito.any(ActivityPostDTO.class)))
-                .thenReturn(savedDTO);
+        Mockito.when(activityManagementService.addActivity(Mockito.eq(1L), Mockito.eq(2L), Mockito.any(Activity.class)))
+                .thenReturn(saved);
 
         try {
             mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/trips/1/destinations/2/activities")
@@ -141,14 +144,14 @@ public class ActivityControllerTest {
         postDTO.setPlaceId("place-1");
         postDTO.setName("Updated Museum");
 
-        ActivitySearchResultDTO updatedDTO = new ActivitySearchResultDTO();
-        updatedDTO.setId(10L);
-        updatedDTO.setPlaceId("place-1");
-        updatedDTO.setName("Updated Museum");
+        Activity updated = new Activity();
+        updated.setId(10L);
+        updated.setPlaceId("place-1");
+        updated.setName("Updated Museum");
 
         Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
-        Mockito.when(activityManagementService.updateActivity(Mockito.eq(1L), Mockito.eq(2L), Mockito.eq(10L), Mockito.any(ActivityPostDTO.class)))
-                .thenReturn(updatedDTO);
+        Mockito.when(activityManagementService.updateActivity(Mockito.eq(1L), Mockito.eq(2L), Mockito.eq(10L), Mockito.any(Activity.class)))
+                .thenReturn(updated);
 
         try {
             mockMvc.perform(put("/trips/1/destinations/2/activities/10")
