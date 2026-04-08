@@ -1,3 +1,10 @@
+
+# Google Maps API
+Run export GOOGLE_MAPS_API_KEY="your-key" in your shell to enable the API key. 
+
+
+
+
 # SoPra RESTful Service Template FS26
 
 ## Getting started with Spring Boot

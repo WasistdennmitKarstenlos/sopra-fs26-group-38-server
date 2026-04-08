@@ -1,9 +1,9 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
+import ch.uzh.ifi.hase.soprafs26.config.GoogleMapsProperties;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -25,7 +25,6 @@ public class ActivitySearchServiceTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @InjectMocks
     private ActivitySearchService activitySearchService;
 
     @BeforeEach
@@ -34,8 +33,9 @@ public class ActivitySearchServiceTest {
         activitySearchService = new ActivitySearchService(
                 restTemplate,
                 objectMapper,
-                "https://maps.googleapis.com/maps/api/place/textsearch/json",
-                "test-key");
+                new GoogleMapsProperties(
+                        "https://maps.googleapis.com/maps/api/place/textsearch/json",
+                        "test-key"));
     }
 
     @Test

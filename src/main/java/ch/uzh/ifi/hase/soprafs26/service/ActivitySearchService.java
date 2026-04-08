@@ -1,9 +1,9 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
+import ch.uzh.ifi.hase.soprafs26.config.GoogleMapsProperties;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -29,12 +29,13 @@ public class ActivitySearchService {
 
     public ActivitySearchService(RestTemplate restTemplate,
                                  ObjectMapper objectMapper,
-                                 @Value("${google.maps.base-url:https://maps.googleapis.com/maps/api/place/textsearch/json}") String baseUrl,
-                                 @Value("${google.maps.api-key:}") String apiKey) {
+                                 GoogleMapsProperties googleMapsProperties) {
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
-        this.baseUrl = baseUrl;
-        this.apiKey = apiKey;
+        this.baseUrl = googleMapsProperties.baseUrl() != null && !googleMapsProperties.baseUrl().isBlank()
+                ? googleMapsProperties.baseUrl()
+                : "https://maps.googleapis.com/maps/api/place/textsearch/json";
+        this.apiKey = googleMapsProperties.apiKey();
     }
 
     public List<ActivitySearchResultDTO> searchActivities(Long tripId,
@@ -64,7 +65,8 @@ public class ActivitySearchService {
         }
 
         String requestUrl = uriBuilder.toUriString();
-        log.debug("Searching activities for trip {} destination {} via Google Places: {}", tripId, destinationId, requestUrl);
+        log.debug("Searching activities for trip {} destination {} via Google Places: {}",
+                tripId, destinationId, redactApiKey(requestUrl));
 
         ResponseEntity<String> response = restTemplate.getForEntity(requestUrl, String.class);
         if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
@@ -278,5 +280,12 @@ public class ActivitySearchService {
                 .queryParam("photo_reference", resultNode.getPhotos().get(0).getPhotoReference())
                 .queryParam("key", apiKey.trim())
                 .toUriString();
+    }
+
+    private static String redactApiKey(String url) {
+        if (url == null || url.isBlank()) {
+            return url;
+        }
+        return url.replaceAll("([?&]key=)[^&]+", "$1***");
     }
 }
