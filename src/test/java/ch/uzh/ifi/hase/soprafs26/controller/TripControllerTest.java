@@ -225,6 +225,7 @@ public class TripControllerTest {
         trip.setStatus(Trip.TripStatus.EVALUATION);
 
         given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
+        given(tripService.getTripById(1L)).willReturn(trip);
         given(tripService.updateTripStatus(1L, Trip.TripStatus.EVALUATION)).willReturn(trip);
 
         // when
@@ -237,6 +238,34 @@ public class TripControllerTest {
         mockMvc.perform(putRequest)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("EVALUATION")));
+    }
+
+    @Test
+    public void updateTripStatus_nonHost_forbidden() throws Exception {
+        // given
+        User nonHost = new User();
+        nonHost.setId(2L);
+        nonHost.setUsername("nonHostUser");
+
+        Trip trip = new Trip();
+        trip.setId(1L);
+        trip.setName("Paris Vacation");
+        trip.setRoomCode("ABC123");
+        trip.setHostId(1L);
+        trip.setStatus(Trip.TripStatus.ACTIVE);
+
+        given(userService.validateToken("Bearer valid-token")).willReturn(nonHost);
+        given(tripService.getTripById(1L)).willReturn(trip);
+
+        // when
+        MockHttpServletRequestBuilder putRequest = put("/trips/1/status")
+                .param("newStatus", "EVALUATION")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer valid-token");
+
+        // then
+        mockMvc.perform(putRequest)
+                .andExpect(status().isForbidden());
     }
 
     @Test
