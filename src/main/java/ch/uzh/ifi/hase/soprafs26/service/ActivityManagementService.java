@@ -15,11 +15,14 @@ public class ActivityManagementService {
 
     private final ActivityRepository activityRepository;
     private final DestinationService destinationService;
+    private final TripService tripService;
 
     public ActivityManagementService(ActivityRepository activityRepository,
-                                     DestinationService destinationService) {
+                                     DestinationService destinationService,
+                                     TripService tripService) {
         this.activityRepository = activityRepository;
         this.destinationService = destinationService;
+        this.tripService = tripService;
     }
 
     public List<Activity> getSelectedActivities(Long tripId, Long destinationId) {
@@ -30,6 +33,7 @@ public class ActivityManagementService {
     }
 
     public Activity addActivity(Long tripId, Long destinationId, Activity activityInput) {
+        tripService.ensureTripIsActiveForMutations(tripId);
         destinationService.getDestinationEntity(tripId, destinationId);
         validateActivity(activityInput);
 
@@ -52,6 +56,7 @@ public class ActivityManagementService {
     }
 
     public Activity updateActivity(Long tripId, Long destinationId, Long activityId, Activity activityUpdate) {
+        tripService.ensureTripIsActiveForMutations(tripId);
         destinationService.getDestinationEntity(tripId, destinationId);
         validateActivity(activityUpdate);
 
@@ -70,6 +75,7 @@ public class ActivityManagementService {
     }
 
     public void deleteActivity(Long tripId, Long destinationId, Long activityId) {
+        tripService.ensureTripIsActiveForMutations(tripId);
         destinationService.getDestinationEntity(tripId, destinationId);
 
         Activity activity = activityRepository.findByIdAndTripIdAndDestinationId(activityId, tripId, destinationId)
