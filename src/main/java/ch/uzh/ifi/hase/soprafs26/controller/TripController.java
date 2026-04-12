@@ -176,7 +176,16 @@ public class TripController {
     public TripGetDTO updateTripStatus(@RequestHeader(value = "Authorization", required = false) String token,
                                        @PathVariable Long tripId,
                                        @RequestParam Trip.TripStatus newStatus) {
-        userService.validateToken(token);
+        User authenticatedUser = userService.validateToken(token);
+
+        Trip trip = tripService.getTripById(tripId);
+        if (!trip.getHostId().equals(authenticatedUser.getId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Only the host can update this trip's status"
+            );
+        }
+
         Trip updatedTrip = tripService.updateTripStatus(tripId, newStatus);
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(updatedTrip);
     }
