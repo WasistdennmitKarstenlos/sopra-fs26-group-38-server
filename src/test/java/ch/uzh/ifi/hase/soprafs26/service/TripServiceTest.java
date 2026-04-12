@@ -1,7 +1,13 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
-import ch.uzh.ifi.hase.soprafs26.entity.Trip;
-import ch.uzh.ifi.hase.soprafs26.repository.TripRepository;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -10,11 +16,10 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
+import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.entity.TripMembership;
+import ch.uzh.ifi.hase.soprafs26.repository.TripMembershipRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.TripRepository;
 
 /**
  * TripServiceTest
@@ -24,6 +29,9 @@ public class TripServiceTest {
 
     @Mock
     private TripRepository tripRepository;
+
+    @Mock
+    private TripMembershipRepository tripMembershipRepository;
 
     @InjectMocks
     private TripService tripService;
@@ -58,6 +66,7 @@ public class TripServiceTest {
 
         // then
         Mockito.verify(tripRepository, Mockito.times(1)).save(Mockito.any());
+        Mockito.verify(tripMembershipRepository, Mockito.times(1)).save(Mockito.any(TripMembership.class));
         assertNotNull(createdTrip.getRoomCode());
         assertEquals("Paris Vacation", createdTrip.getName());
         assertEquals(1L, createdTrip.getHostId());
@@ -72,7 +81,8 @@ public class TripServiceTest {
         tripInput.setHostId(1L);
 
         // when/then
-        assertThrows(ResponseStatusException.class, () -> tripService.createTrip(tripInput));
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> tripService.createTrip(tripInput));
+        assertNotNull(exception);
     }
 
     @Test
@@ -83,7 +93,8 @@ public class TripServiceTest {
         tripInput.setHostId(1L);
 
         // when/then
-        assertThrows(ResponseStatusException.class, () -> tripService.createTrip(tripInput));
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> tripService.createTrip(tripInput));
+        assertNotNull(exception);
     }
 
     @Test
@@ -94,7 +105,8 @@ public class TripServiceTest {
         tripInput.setHostId(null);
 
         // when/then
-        assertThrows(ResponseStatusException.class, () -> tripService.createTrip(tripInput));
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> tripService.createTrip(tripInput));
+        assertNotNull(exception);
     }
 
     @Test
@@ -109,7 +121,8 @@ public class TripServiceTest {
                 .thenReturn(Optional.of(testTrip));
 
         // then -> attempt to create duplicate trip -> check that an error is thrown
-        assertThrows(ResponseStatusException.class, () -> tripService.createTrip(tripInput));
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> tripService.createTrip(tripInput));
+        assertNotNull(exception);
     }
 
     @Test
@@ -131,7 +144,8 @@ public class TripServiceTest {
         Mockito.when(tripRepository.findById(999L)).thenReturn(Optional.empty());
 
         // then
-        assertThrows(ResponseStatusException.class, () -> tripService.getTripById(999L));
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> tripService.getTripById(999L));
+        assertNotNull(exception);
     }
 
     @Test
@@ -152,7 +166,8 @@ public class TripServiceTest {
         Mockito.when(tripRepository.findByRoomCode("INVALID")).thenReturn(Optional.empty());
 
         // then
-        assertThrows(ResponseStatusException.class, () -> tripService.getTripByRoomCode("INVALID"));
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> tripService.getTripByRoomCode("INVALID"));
+        assertNotNull(exception);
     }
 
     @Test
@@ -219,5 +234,42 @@ public class TripServiceTest {
         // then
         assertEquals(2, retrievedTrips.size());
         Mockito.verify(tripRepository, Mockito.times(1)).findAll();
+    }
+
+    @Test
+    public void getTripsForUser_withMemberships_success() {
+        // given
+        Trip trip2 = new Trip();
+        trip2.setId(2L);
+        trip2.setName("London Trip");
+
+        TripMembership membership1 = new TripMembership(1L, 42L);
+        TripMembership membership2 = new TripMembership(2L, 42L);
+
+        Mockito.when(tripMembershipRepository.findByUserId(42L))
+                .thenReturn(Arrays.asList(membership1, membership2));
+        Mockito.when(tripRepository.findByIdInOrderByCreationDateDesc(Arrays.asList(1L, 2L)))
+                .thenReturn(Arrays.asList(testTrip, trip2));
+
+        // when
+        List<Trip> retrievedTrips = tripService.getTripsForUser(42L);
+
+        // then
+        assertEquals(2, retrievedTrips.size());
+        Mockito.verify(tripMembershipRepository, Mockito.times(1)).findByUserId(42L);
+        Mockito.verify(tripRepository, Mockito.times(1)).findByIdInOrderByCreationDateDesc(Arrays.asList(1L, 2L));
+    }
+
+    @Test
+    public void getTripsForUser_withoutMemberships_emptyList() {
+        // given
+        Mockito.when(tripMembershipRepository.findByUserId(999L)).thenReturn(List.of());
+
+        // when
+        List<Trip> retrievedTrips = tripService.getTripsForUser(999L);
+
+        // then
+        assertTrue(retrievedTrips.isEmpty());
+        Mockito.verify(tripRepository, Mockito.never()).findByIdInOrderByCreationDateDesc(Mockito.anyList());
     }
 }

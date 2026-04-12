@@ -1,21 +1,5 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
-import ch.uzh.ifi.hase.soprafs26.entity.Trip;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
-import ch.uzh.ifi.hase.soprafs26.service.TripService;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.web.server.ResponseStatusException;
-
-import tools.jackson.databind.ObjectMapper;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -23,10 +7,27 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import org.junit.jupiter.api.Test;
 import static org.mockito.BDDMockito.given;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
+import ch.uzh.ifi.hase.soprafs26.service.TripService;
+import ch.uzh.ifi.hase.soprafs26.service.UserService;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * TripControllerTest
@@ -43,9 +44,16 @@ public class TripControllerTest {
     @MockitoBean
     private TripService tripService;
 
+        @MockitoBean
+        private UserService userService;
+
     @Test
     public void givenTrips_whenGetTrips_thenReturnJsonArray() throws Exception {
         // given
+                User currentUser = new User();
+                currentUser.setId(1L);
+                given(userService.validateToken("Bearer valid-token")).willReturn(currentUser);
+
         Trip trip = new Trip();
         trip.setId(1L);
         trip.setName("Paris Vacation");
@@ -56,11 +64,12 @@ public class TripControllerTest {
         List<Trip> allTrips = Collections.singletonList(trip);
 
         // this mocks the TripService -> we define above what the tripService should
-        // return when getAllTrips() is called
-        given(tripService.getAllTrips()).willReturn(allTrips);
+        // return when getTripsForUser() is called
+        given(tripService.getTripsForUser(1L)).willReturn(allTrips);
 
         // when
         MockHttpServletRequestBuilder getRequest = get("/trips")
+                .header("Authorization", "Bearer valid-token")
                 .contentType(MediaType.APPLICATION_JSON);
 
         // then
@@ -155,6 +164,10 @@ public class TripControllerTest {
     @Test
     public void createTrip_validInput_tripCreated() throws Exception {
         // given
+                User currentUser = new User();
+                currentUser.setId(1L);
+                given(userService.validateToken("Bearer valid-token")).willReturn(currentUser);
+
         TripPostDTO tripPostDTO = new TripPostDTO();
         tripPostDTO.setName("Paris Vacation");
 
@@ -170,7 +183,7 @@ public class TripControllerTest {
 
         // when
         MockHttpServletRequestBuilder postRequest = post("/trips")
-                .param("hostId", "1")
+                .header("Authorization", "Bearer valid-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(new ObjectMapper().writeValueAsString(tripPostDTO));
 

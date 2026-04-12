@@ -1,17 +1,20 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
-import ch.uzh.ifi.hase.soprafs26.entity.Trip;
-import ch.uzh.ifi.hase.soprafs26.repository.TripRepository;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.UUID;
+import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.entity.TripMembership;
+import ch.uzh.ifi.hase.soprafs26.repository.TripMembershipRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.TripRepository;
 
 @Service
 @Transactional
@@ -19,10 +22,11 @@ public class TripService {
 
     private final Logger log = LoggerFactory.getLogger(TripService.class);
     private final TripRepository tripRepository;
+    private final TripMembershipRepository tripMembershipRepository;
 
-    @Autowired
-    public TripService(TripRepository tripRepository) {
+    public TripService(TripRepository tripRepository, TripMembershipRepository tripMembershipRepository) {
         this.tripRepository = tripRepository;
+        this.tripMembershipRepository = tripMembershipRepository;
     }
 
     /**
@@ -32,6 +36,33 @@ public class TripService {
     public List<Trip> getAllTrips() {
         log.debug("Fetching all trips");
         return tripRepository.findAll();
+    }
+
+    /**
+     * Get all trips where the user is either host or participant.
+     * @param userId the current user ID
+     * @return list of relevant trips
+     */
+    public List<Trip> getTripsForUser(Long userId) {
+        log.debug("Fetching trips for user: {}", userId);
+
+        List<TripMembership> memberships = tripMembershipRepository.findByUserId(userId);
+        if (memberships.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> tripIds = new ArrayList<>();
+        for (TripMembership membership : memberships) {
+            if (membership != null && membership.getTripId() != null) {
+                tripIds.add(membership.getTripId());
+            }
+        }
+
+        if (tripIds.isEmpty()) {
+            return List.of();
+        }
+
+        return tripRepository.findByIdInOrderByCreationDateDesc(tripIds);
     }
 
     /**
@@ -92,6 +123,7 @@ public class TripService {
 
         // Save to database
         Trip savedTrip = tripRepository.save(trip);
+        tripMembershipRepository.save(new TripMembership(savedTrip.getId(), savedTrip.getHostId()));
         log.info("Trip created successfully with id: {}, room code: {}", savedTrip.getId(), roomCode);
 
         return savedTrip;

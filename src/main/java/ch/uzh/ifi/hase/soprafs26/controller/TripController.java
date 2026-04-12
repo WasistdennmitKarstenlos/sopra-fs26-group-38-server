@@ -1,16 +1,27 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
-import ch.uzh.ifi.hase.soprafs26.entity.Trip;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.TripGetDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
-import ch.uzh.ifi.hase.soprafs26.service.TripService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.TripGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
+import ch.uzh.ifi.hase.soprafs26.service.TripService;
+import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
 /**
  * TripController
@@ -22,20 +33,22 @@ import java.util.stream.Collectors;
 public class TripController {
 
     private final TripService tripService;
+    private final UserService userService;
 
-    @Autowired
-    public TripController(TripService tripService) {
+    public TripController(TripService tripService, UserService userService) {
         this.tripService = tripService;
+        this.userService = userService;
     }
 
     /**
-     * Get all trips
-     * @return list of all trips
+     * Get trips created or joined by the authenticated user.
+     * @return list of trips the current user is part of
      */
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<TripGetDTO> getAllTrips() {
-        List<Trip> trips = tripService.getAllTrips();
+    public List<TripGetDTO> getAllTrips(@RequestHeader(value = "Authorization", required = false) String token) {
+        User currentUser = userService.validateToken(token);
+        List<Trip> trips = tripService.getTripsForUser(currentUser.getId());
         return trips.stream()
                 .map(DTOMapper.INSTANCE::convertEntityToTripGetDTO)
                 .collect(Collectors.toList());
@@ -84,15 +97,16 @@ public class TripController {
      * Create a new trip
      * The authenticated user becomes the host of the trip
      * @param tripPostDTO trip data with name
-     * @param hostId the ID of the user creating the trip (should come from auth context in a real app)
+     * @param token Authorization header used to resolve the current user
      * @return the created trip with room code
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public TripGetDTO createTrip(@RequestBody TripPostDTO tripPostDTO, 
-                                  @RequestParam Long hostId) {
+    public TripGetDTO createTrip(@RequestBody TripPostDTO tripPostDTO,
+                                  @RequestHeader(value = "Authorization", required = false) String token) {
+        User currentUser = userService.validateToken(token);
         Trip trip = DTOMapper.INSTANCE.convertTripPostDTOtoEntity(tripPostDTO);
-        trip.setHostId(hostId);
+        trip.setHostId(currentUser.getId());
         
         Trip createdTrip = tripService.createTrip(trip);
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(createdTrip);

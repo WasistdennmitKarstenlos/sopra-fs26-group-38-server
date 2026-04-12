@@ -1,10 +1,13 @@
 package ch.uzh.ifi.hase.soprafs26.entity;
 
-import jakarta.persistence.*;
+import java.io.Serializable;
 
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
-
-import java.io.Serializable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 /**
  * Internal User Representation
@@ -40,6 +43,9 @@ public class User implements Serializable {
 
 	@Column(nullable = false)
 	private String creationDate;
+
+	@Column(nullable = true)
+	private String bio;
 
 	public Long getId() {
 		return id;
@@ -79,14 +85,6 @@ public class User implements Serializable {
 
 	public void setStatus(UserStatus status) {
 		this.status = status;
-	}
-
-	public String getPassword() {
-		return password;
-	}
-
-	public void setPassword(String password) {
-		this.password = password;
 	}
 
 	public String getCreationDate() {
