@@ -1,17 +1,15 @@
 package ch.uzh.ifi.hase.soprafs26.rest.mapper;
 
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.Named;
+import org.mapstruct.*;
 import org.mapstruct.factory.Mappers;
 
-import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.TripGetDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
+import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserRegisterDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.TripGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
 
 /**
  * DTOMapper
