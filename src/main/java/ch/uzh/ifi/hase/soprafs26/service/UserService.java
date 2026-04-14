@@ -149,5 +149,29 @@ public class UserService {
 					"The username provided is not unique. Therefore, the user could not be created!");
 		}
 	}
-	
+
+	/**
+	 * Logout a user
+	 * @param token
+	 */
+	public void logoutUser(String token) {
+		if (token == null || token.trim().isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token cannot be empty!");
+		}
+		// Remove "Bearer " prefix if present
+		String actualToken = token.startsWith("Bearer ") ? token.substring(7) : token;
+
+		User user = userRepository.findByToken(actualToken);
+		if (user == null) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found!");
+		}
+
+		// Set user status to OFFLINE
+		user.setStatus(UserStatus.OFFLINE);
+        user.setToken(null); // Clear token on logout
+		userRepository.save(user);
+		userRepository.flush();
+
+		log.debug("User logged out: {}", user);
+	}
 }

@@ -5,18 +5,20 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import ch.uzh.ifi.hase.soprafs26.entity.Destination;
+import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.repository.DestinationRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.TripRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.TripMembershipRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
-
-import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.entity.TripMembership;
-import ch.uzh.ifi.hase.soprafs26.repository.TripMembershipRepository;
-import ch.uzh.ifi.hase.soprafs26.repository.TripRepository;
 
 /**
  * TripServiceTest
@@ -28,7 +30,11 @@ public class TripServiceTest {
     private TripRepository tripRepository;
 
     @Mock
+    private DestinationRepository destinationRepository;
+
+    @Mock
     private TripMembershipRepository tripMembershipRepository;
+
 
     @InjectMocks
     private TripService tripService;
@@ -49,6 +55,8 @@ public class TripServiceTest {
 
         // when -> any object is being saved in the tripRepository -> return the dummy testTrip
         Mockito.when(tripRepository.save(Mockito.any())).thenReturn(testTrip);
+        Mockito.when(tripMembershipRepository.existsByTripIdAndUserId(Mockito.anyLong(), Mockito.anyLong()))
+            .thenReturn(true);
     }
 
     @Test
@@ -268,5 +276,66 @@ public class TripServiceTest {
         // then
         assertTrue(retrievedTrips.isEmpty());
         Mockito.verify(tripRepository, Mockito.never()).findByIdInOrderByCreationDateDesc(Mockito.anyList());
+    
+    @Test
+    public void addDestination_validInput_successAndBroadcast() {
+        Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
+
+        Destination destinationInput = new Destination();
+        destinationInput.setDestinationName("Zurich");
+
+        Destination saved = new Destination();
+        saved.setId(10L);
+        saved.setTripId(1L);
+        saved.setDestinationName("Zurich");
+        saved.setProposedByUserId(1L);
+
+        Mockito.when(destinationRepository.save(Mockito.any())).thenReturn(saved);
+
+        Destination created = tripService.addDestination(1L, 1L, destinationInput);
+
+        assertEquals(10L, created.getId());
+        assertEquals("Zurich", created.getDestinationName());
+        Mockito.verify(destinationRepository, Mockito.times(1)).save(Mockito.any());
+    }
+
+    @Test
+    public void addDestination_nonParticipant_forbidden() {
+        Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
+        Mockito.when(tripMembershipRepository.existsByTripIdAndUserId(1L, 99L)).thenReturn(false);
+
+        Destination destinationInput = new Destination();
+        destinationInput.setDestinationName("Bern");
+
+        assertThrows(ResponseStatusException.class, () -> tripService.addDestination(1L, 99L, destinationInput));
+    }
+
+    @Test
+    public void addDestination_emptyLocation_badRequest() {
+        Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
+
+        Destination destinationInput = new Destination();
+        destinationInput.setDestinationName("   ");
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> tripService.addDestination(1L, 1L, destinationInput));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+    }
+
+    @Test
+    public void addDestination_inactiveTrip_badRequest() {
+        testTrip.setStatus(Trip.TripStatus.FINALIZED);
+        Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
+
+        Destination destinationInput = new Destination();
+        destinationInput.setDestinationName("Basel");
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> tripService.addDestination(1L, 1L, destinationInput));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
 }

@@ -3,12 +3,11 @@ package ch.uzh.ifi.hase.soprafs26.entity;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
+import java.util.Date;
 
 @Entity
-@Table(name = "TRIPMEMBERSHIP", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"tripId", "userId"})
-})
-public class TripMembership implements Serializable {
+@Table(name = "DESTINATION")
+public class Destination implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -20,16 +19,10 @@ public class TripMembership implements Serializable {
     private Long tripId;
 
     @Column(nullable = false)
-    private Long userId;
+    private String destinationName;
 
-    public TripMembership() {
-        // JPA default constructor
-    }
-
-    public TripMembership(Long tripId, Long userId) {
-        this.tripId = tripId;
-        this.userId = userId;
-    }
+    @Column(nullable = false)
+    private Long proposedByUserId;
 
     public Long getId() {
         return id;
@@ -47,11 +40,20 @@ public class TripMembership implements Serializable {
         this.tripId = tripId;
     }
 
-    public Long getUserId() {
-        return userId;
+    public String getDestinationName() {
+        return destinationName;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setDestinationName(String destinationName) {
+        this.destinationName = destinationName;
+    }
+
+    public Long getProposedByUserId() {
+        return proposedByUserId;
+    }
+
+    public void setProposedByUserId(Long proposedByUserId) {
+        this.proposedByUserId = proposedByUserId;
     }
 }
+
