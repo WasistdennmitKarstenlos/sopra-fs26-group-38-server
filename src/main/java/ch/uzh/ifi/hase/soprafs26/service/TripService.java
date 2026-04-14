@@ -1,11 +1,9 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
-import ch.uzh.ifi.hase.soprafs26.entity.Destination;
-import ch.uzh.ifi.hase.soprafs26.entity.Trip;
-import ch.uzh.ifi.hase.soprafs26.entity.TripMembership;
-import ch.uzh.ifi.hase.soprafs26.repository.DestinationRepository;
-import ch.uzh.ifi.hase.soprafs26.repository.TripRepository;
-import ch.uzh.ifi.hase.soprafs26.repository.TripMembershipRepository;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -13,8 +11,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.UUID;
+import ch.uzh.ifi.hase.soprafs26.entity.Destination;
+import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.entity.TripMembership;
+import ch.uzh.ifi.hase.soprafs26.repository.DestinationRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.TripMembershipRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.TripRepository;
 
 @Service
 @Transactional
@@ -41,6 +43,20 @@ public class TripService {
     public List<Trip> getAllTrips() {
         log.debug("Fetching all trips");
         return tripRepository.findAll();
+    }
+
+    /**
+     * Get all trips that the given user created or joined.
+     * @param userId the authenticated user's ID
+     * @return trips ordered by creation date descending
+     */
+    public List<Trip> getTripsForUser(Long userId) {
+        log.debug("Fetching trips for user: {}", userId);
+        List<Long> tripIds = tripMembershipRepository.findByUserId(userId)
+                .stream()
+                .map(TripMembership::getTripId)
+                .collect(Collectors.toList());
+        return tripRepository.findByIdInOrderByCreationDateDesc(tripIds);
     }
 
     /**

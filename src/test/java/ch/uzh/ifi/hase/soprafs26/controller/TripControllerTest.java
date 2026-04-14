@@ -1,13 +1,13 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
-import ch.uzh.ifi.hase.soprafs26.entity.Trip;
-import ch.uzh.ifi.hase.soprafs26.entity.User;
-import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
-import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
-import ch.uzh.ifi.hase.soprafs26.service.TripService;
-import ch.uzh.ifi.hase.soprafs26.service.UserService;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import org.junit.jupiter.api.Test;
+import static org.mockito.BDDMockito.given;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -16,21 +16,21 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import tools.jackson.databind.ObjectMapper;
-
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.mockito.BDDMockito.given;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.web.server.ResponseStatusException;
+
+import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
+import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
+import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
+import ch.uzh.ifi.hase.soprafs26.service.TripService;
+import ch.uzh.ifi.hase.soprafs26.service.UserService;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * TripControllerTest
@@ -77,7 +77,7 @@ public class TripControllerTest {
         // this mocks the TripService -> we define above what the tripService should
         // return when getAllTrips() is called
         given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
-        given(tripService.getAllTrips()).willReturn(allTrips);
+        given(tripService.getTripsForUser(1L)).willReturn(allTrips);
 
         // when
         MockHttpServletRequestBuilder getRequest = get("/trips")

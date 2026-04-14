@@ -1,10 +1,12 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
-import ch.uzh.ifi.hase.soprafs26.entity.Destination;
-import ch.uzh.ifi.hase.soprafs26.entity.Trip;
-import ch.uzh.ifi.hase.soprafs26.repository.DestinationRepository;
-import ch.uzh.ifi.hase.soprafs26.repository.TripRepository;
-import ch.uzh.ifi.hase.soprafs26.repository.TripMembershipRepository;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -14,11 +16,12 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
+import ch.uzh.ifi.hase.soprafs26.entity.Destination;
+import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.entity.TripMembership;
+import ch.uzh.ifi.hase.soprafs26.repository.DestinationRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.TripMembershipRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.TripRepository;
 
 /**
  * TripServiceTest
@@ -294,5 +297,39 @@ public class TripServiceTest {
                 () -> tripService.addDestination(1L, 1L, destinationInput));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+    }
+
+    @Test
+    public void getTripsForUser_returnsMemberTrips() {
+        // given
+        TripMembership membership = new TripMembership(1L, 42L);
+        Mockito.when(tripMembershipRepository.findByUserId(42L))
+                .thenReturn(List.of(membership));
+        Mockito.when(tripRepository.findByIdInOrderByCreationDateDesc(List.of(1L)))
+                .thenReturn(List.of(testTrip));
+
+        // when
+        List<Trip> result = tripService.getTripsForUser(42L);
+
+        // then
+        assertEquals(1, result.size());
+        assertEquals(testTrip.getId(), result.get(0).getId());
+        Mockito.verify(tripMembershipRepository).findByUserId(42L);
+        Mockito.verify(tripRepository).findByIdInOrderByCreationDateDesc(List.of(1L));
+    }
+
+    @Test
+    public void getTripsForUser_noMemberships_returnsEmpty() {
+        // given
+        Mockito.when(tripMembershipRepository.findByUserId(99L))
+                .thenReturn(List.of());
+        Mockito.when(tripRepository.findByIdInOrderByCreationDateDesc(List.of()))
+                .thenReturn(List.of());
+
+        // when
+        List<Trip> result = tripService.getTripsForUser(99L);
+
+        // then
+        assertEquals(0, result.size());
     }
 }
