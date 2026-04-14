@@ -1,13 +1,10 @@
 package ch.uzh.ifi.hase.soprafs26.entity;
 
-import java.io.Serializable;
+import jakarta.persistence.*;
 
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+
+import java.io.Serializable;
 
 /**
  * Internal User Representation
