@@ -19,6 +19,8 @@ import org.springframework.web.server.ResponseStatusException;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.InviteDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.JoinTripRequestDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.JoinTripResponseDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
@@ -91,20 +93,26 @@ public class TripController {
     }
 
     /**
-     * Join a trip using a room code.
+     * Join a trip using a room code and room username.
      * Requires authentication and records membership for destination permissions.
-     * @param roomCode room code to join
+     * @param requestDTO request body containing roomCode and roomUsername
      * @param token authorization header
      * @return joined trip details
      */
-    @PostMapping("/join/{roomCode}")
+    @PostMapping("/join")
     @ResponseStatus(HttpStatus.OK)
-    public TripGetDTO joinTripByRoomCode(
-            @PathVariable String roomCode,
+    public JoinTripResponseDTO joinTrip(
+            @RequestBody JoinTripRequestDTO requestDTO,
             @RequestHeader(value = "Authorization", required = false) String token) {
         User requester = userService.validateToken(token);
-        Trip trip = tripService.joinTripByRoomCode(roomCode, requester.getId());
-        return DTOMapper.INSTANCE.convertEntityToTripGetDTO(trip);
+        Trip trip = tripService.joinTripByRoomCode(requestDTO.getRoomCode(), requester.getId(), requestDTO.getRoomUsername());
+
+        JoinTripResponseDTO response = new JoinTripResponseDTO();
+        response.setTripId(trip.getId());
+        response.setRoomCode(trip.getRoomCode());
+        response.setRoomUsername(requestDTO.getRoomUsername());
+        response.setUserId(requester.getId());
+        return response;
     }
 
     /**
@@ -133,9 +141,8 @@ public class TripController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public TripGetDTO createTrip(@RequestBody TripPostDTO tripPostDTO,
-                                 @RequestHeader(value = "Authorization", required = false) String token) {
+                                  @RequestHeader(value = "Authorization", required = false) String token) {
         User authenticatedUser = userService.validateToken(token);
-
         Trip trip = DTOMapper.INSTANCE.convertTripPostDTOtoEntity(tripPostDTO);
         trip.setHostId(authenticatedUser.getId());
         
@@ -185,7 +192,7 @@ public class TripController {
     @ResponseStatus(HttpStatus.OK)
     public TripGetDTO updateTripStatus(@RequestHeader(value = "Authorization", required = false) String token,
                                        @PathVariable Long tripId,
-                                       @RequestParam Trip.TripStatus newStatus) {
+                                        @RequestParam Trip.TripStatus newStatus) {
         userService.validateToken(token);
         Trip updatedTrip = tripService.updateTripStatus(tripId, newStatus);
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(updatedTrip);
