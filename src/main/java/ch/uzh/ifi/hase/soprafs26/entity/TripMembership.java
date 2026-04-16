@@ -1,8 +1,14 @@
 package ch.uzh.ifi.hase.soprafs26.entity;
 
-import jakarta.persistence.*;
-
 import java.io.Serializable;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(name = "TRIPMEMBERSHIP", uniqueConstraints = {
@@ -22,6 +28,9 @@ public class TripMembership implements Serializable {
     @Column(nullable = false)
     private Long userId;
 
+    @Column
+    private String roomUsername;
+
     public TripMembership() {
         // JPA default constructor
     }
@@ -29,6 +38,12 @@ public class TripMembership implements Serializable {
     public TripMembership(Long tripId, Long userId) {
         this.tripId = tripId;
         this.userId = userId;
+    }
+
+    public TripMembership(Long tripId, Long userId, String roomUsername) {
+        this.tripId = tripId;
+        this.userId = userId;
+        this.roomUsername = roomUsername;
     }
 
     public Long getId() {
@@ -53,5 +68,13 @@ public class TripMembership implements Serializable {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getRoomUsername() {
+        return roomUsername;
+    }
+
+    public void setRoomUsername(String roomUsername) {
+        this.roomUsername = roomUsername;
     }
 }
