@@ -7,8 +7,10 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -331,5 +333,79 @@ public class TripServiceTest {
 
         // then
         assertEquals(0, result.size());
+    }
+
+    @Test
+    public void joinTripByRoomCode_validInput_success() {
+        Mockito.when(tripRepository.findByRoomCode("ABC123")).thenReturn(Optional.of(testTrip));
+        Mockito.when(tripMembershipRepository.existsByTripIdAndUserId(1L, 2L)).thenReturn(false);
+        Mockito.when(tripMembershipRepository.existsByTripIdAndRoomUsername(1L, "alice")).thenReturn(false);
+
+        Trip joinedTrip = tripService.joinTripByRoomCode("ABC123", 2L, "  alice  ");
+
+        assertEquals(1L, joinedTrip.getId());
+        ArgumentCaptor<TripMembership> membershipCaptor = ArgumentCaptor.forClass(TripMembership.class);
+        Mockito.verify(tripMembershipRepository).save(membershipCaptor.capture());
+        assertEquals(1L, membershipCaptor.getValue().getTripId());
+        assertEquals(2L, membershipCaptor.getValue().getUserId());
+        assertEquals("alice", membershipCaptor.getValue().getRoomUsername());
+    }
+
+    @Test
+    public void joinTripByRoomCode_blankRoomCode_badRequest() {
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> tripService.joinTripByRoomCode("   ", 2L, "alice"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+    }
+
+    @Test
+    public void joinTripByRoomCode_blankRoomUsername_badRequest() {
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> tripService.joinTripByRoomCode("ABC123", 2L, "   "));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+    }
+
+    @Test
+    public void joinTripByRoomCode_duplicateMembership_conflict() {
+        Mockito.when(tripRepository.findByRoomCode("ABC123")).thenReturn(Optional.of(testTrip));
+        Mockito.when(tripMembershipRepository.existsByTripIdAndUserId(1L, 2L)).thenReturn(true);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> tripService.joinTripByRoomCode("ABC123", 2L, "alice"));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+        assertTrue(exception.getReason().contains("already a member"));
+    }
+
+    @Test
+    public void joinTripByRoomCode_duplicateRoomUsername_conflict() {
+        Mockito.when(tripRepository.findByRoomCode("ABC123")).thenReturn(Optional.of(testTrip));
+        Mockito.when(tripMembershipRepository.existsByTripIdAndUserId(1L, 2L)).thenReturn(false);
+        Mockito.when(tripMembershipRepository.existsByTripIdAndRoomUsername(1L, "alice")).thenReturn(true);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> tripService.joinTripByRoomCode("ABC123", 2L, "alice"));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+        assertTrue(exception.getReason().contains("already taken"));
+    }
+
+    @Test
+    public void joinTripByRoomCode_closedTrip_badRequest() {
+        testTrip.setStatus(Trip.TripStatus.FINALIZED);
+        Mockito.when(tripRepository.findByRoomCode("ABC123")).thenReturn(Optional.of(testTrip));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> tripService.joinTripByRoomCode("ABC123", 2L, "alice"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        assertTrue(exception.getReason().contains("closed"));
     }
 }

@@ -26,6 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.JoinTripRequestDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
 import ch.uzh.ifi.hase.soprafs26.service.TripService;
@@ -264,6 +265,54 @@ public class TripControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.finalDestinationId", is(5)))
                 .andExpect(jsonPath("$.status", is("FINALIZED")));
+    }
+
+    @Test
+    public void joinTrip_validRequest_success() throws Exception {
+        Trip trip = new Trip();
+        trip.setId(1L);
+        trip.setName("Paris Vacation");
+        trip.setRoomCode("ABC123");
+        trip.setHostId(1L);
+        trip.setStatus(Trip.TripStatus.ACTIVE);
+
+        JoinTripRequestDTO requestDTO = new JoinTripRequestDTO();
+        requestDTO.setRoomCode("ABC123");
+        requestDTO.setRoomUsername("alice");
+
+        given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
+        given(tripService.joinTripByRoomCode("ABC123", 1L, "alice")).willReturn(trip);
+
+        MockHttpServletRequestBuilder postRequest = post("/trips/join")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer 1")
+                .content(new ObjectMapper().writeValueAsString(requestDTO));
+
+        mockMvc.perform(postRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tripId", is(1)))
+                .andExpect(jsonPath("$.roomCode", is("ABC123")))
+                .andExpect(jsonPath("$.roomUsername", is("alice")))
+                .andExpect(jsonPath("$.userId", is(1)));
+    }
+
+    @Test
+    public void joinTrip_badRequest_propagatesError() throws Exception {
+        JoinTripRequestDTO requestDTO = new JoinTripRequestDTO();
+        requestDTO.setRoomCode("ABC123");
+        requestDTO.setRoomUsername("   ");
+
+        given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
+        given(tripService.joinTripByRoomCode("ABC123", 1L, "   "))
+                .willThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Room username cannot be empty"));
+
+        MockHttpServletRequestBuilder postRequest = post("/trips/join")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer 1")
+                .content(new ObjectMapper().writeValueAsString(requestDTO));
+
+        mockMvc.perform(postRequest)
+                .andExpect(status().isBadRequest());
     }
 
     @Test
