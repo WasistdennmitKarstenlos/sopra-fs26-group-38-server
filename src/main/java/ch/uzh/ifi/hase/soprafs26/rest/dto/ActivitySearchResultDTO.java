@@ -14,6 +14,10 @@ public class ActivitySearchResultDTO implements Serializable {
     private String photoUrl;
     private Double latitude;
     private Double longitude;
+    private long upvotes;
+    private long downvotes;
+    private long score;
+    private String userVote;
 
     public Long getId() {
         return id;
@@ -77,5 +81,37 @@ public class ActivitySearchResultDTO implements Serializable {
 
     public void setLongitude(Double longitude) {
         this.longitude = longitude;
+    }
+
+    public long getUpvotes() {
+        return upvotes;
+    }
+
+    public void setUpvotes(long upvotes) {
+        this.upvotes = upvotes;
+    }
+
+    public long getDownvotes() {
+        return downvotes;
+    }
+
+    public void setDownvotes(long downvotes) {
+        this.downvotes = downvotes;
+    }
+
+    public long getScore() {
+        return score;
+    }
+
+    public void setScore(long score) {
+        this.score = score;
+    }
+
+    public String getUserVote() {
+        return userVote;
+    }
+
+    public void setUserVote(String userVote) {
+        this.userVote = userVote;
     }
 }

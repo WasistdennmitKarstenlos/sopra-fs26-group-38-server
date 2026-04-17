@@ -6,6 +6,7 @@ import ch.uzh.ifi.hase.soprafs26.entity.Vote;
 import ch.uzh.ifi.hase.soprafs26.entity.VoteType;
 import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteRequestDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteResponseDTO;
 import org.springframework.http.HttpStatus;
@@ -156,6 +157,18 @@ public class ActivityManagementService {
         response.setScore(upvotes - downvotes);
         response.setUserVote(userVote.map(vote -> vote.getVoteType().name()).orElse(null));
         return response;
+    }
+
+    // Helper method to get vote data for an activity (used when building ActivitySearchResultDTO)
+    public void populateActivityVoteData(Activity activity, Long userId, ActivitySearchResultDTO dto) {
+        long upvotes = voteRepository.countByActivityIdAndVoteType(activity.getId(), VoteType.UP);
+        long downvotes = voteRepository.countByActivityIdAndVoteType(activity.getId(), VoteType.DOWN);
+        Optional<Vote> userVote = voteRepository.findByActivityIdAndUserId(activity.getId(), userId);
+
+        dto.setUpvotes(upvotes);
+        dto.setDownvotes(downvotes);
+        dto.setScore(upvotes - downvotes);
+        dto.setUserVote(userVote.map(vote -> vote.getVoteType().name()).orElse(null));
     }
 
     private void validateActivity(Activity activity) {
