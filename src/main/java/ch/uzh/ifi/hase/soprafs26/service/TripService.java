@@ -185,6 +185,7 @@ public class TripService {
         return destinationRepository.findByTripIdOrderByIdDesc(tripId);
     }
 
+    // validates that the user is a participant of the trip and returns the trip
     public Trip getTripForParticipant(Long tripId, Long userId) {
         Trip trip = getTripById(tripId);
         ensureParticipant(tripId, userId);

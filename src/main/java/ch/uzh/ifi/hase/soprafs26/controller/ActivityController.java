@@ -3,6 +3,8 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 import ch.uzh.ifi.hase.soprafs26.entity.Activity;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteRequestDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteResponseDTO;
 import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
 import ch.uzh.ifi.hase.soprafs26.service.ActivitySearchService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
@@ -77,6 +79,15 @@ public class ActivityController {
         Activity update = toActivityEntity(activityPostDTO);
         Activity saved = activityManagementService.updateActivity(tripId, destinationId, activityId, update);
         return toSearchResultDTO(saved);
+    }
+
+    @PutMapping("/activities/{activityId}/vote")
+    @ResponseStatus(HttpStatus.OK)
+    public ActivityVoteResponseDTO voteActivity(@PathVariable("activityId") Long activityId,
+                                                @RequestBody ActivityVoteRequestDTO voteRequest,
+                                                @RequestHeader(value = "Authorization", required = false) String token) {
+        var requester = userService.validateToken(token);
+        return activityManagementService.voteOnActivity(activityId, requester.getId(), voteRequest);
     }
 
     @DeleteMapping("/trips/{tripId}/destinations/{destinationId}/activities/{activityId}")
