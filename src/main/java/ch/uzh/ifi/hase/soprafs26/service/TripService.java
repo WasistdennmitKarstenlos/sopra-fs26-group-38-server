@@ -185,6 +185,12 @@ public class TripService {
         return destinationRepository.findByTripIdOrderByIdDesc(tripId);
     }
 
+    public Trip getTripForParticipant(Long tripId, Long userId) {
+        Trip trip = getTripById(tripId);
+        ensureParticipant(tripId, userId);
+        return trip;
+    }
+
     /**
      * Update trip status (e.g., to EVALUATION or FINALIZED)
      * @param tripId the ID of the trip
