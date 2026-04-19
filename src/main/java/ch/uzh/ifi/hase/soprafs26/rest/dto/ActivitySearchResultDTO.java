@@ -18,6 +18,7 @@ public class ActivitySearchResultDTO implements Serializable {
     private long downvotes;
     private long score;
     private String userVote;
+    private String comment;
 
     public Long getId() {
         return id;
@@ -113,5 +114,13 @@ public class ActivitySearchResultDTO implements Serializable {
 
     public void setUserVote(String userVote) {
         this.userVote = userVote;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
     }
 }

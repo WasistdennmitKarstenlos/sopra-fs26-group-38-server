@@ -13,6 +13,7 @@ public class ActivityPostDTO implements Serializable {
     private String photoUrl;
     private Double latitude;
     private Double longitude;
+    private String comment;
 
     public String getPlaceId() {
         return placeId;
@@ -68,5 +69,13 @@ public class ActivityPostDTO implements Serializable {
 
     public void setLongitude(Double longitude) {
         this.longitude = longitude;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
     }
 }
