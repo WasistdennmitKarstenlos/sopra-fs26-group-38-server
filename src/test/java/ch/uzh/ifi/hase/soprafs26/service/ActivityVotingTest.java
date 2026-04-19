@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.springframework.context.ApplicationEventPublisher;
+
 /**
  * Integration tests for activity voting functionality.
  * Tests cover: successful voting, vote changes (toggle), unauthorized access, unknown activity.
@@ -41,6 +43,9 @@ public class ActivityVotingTest {
 
     @Mock
     private TripService tripService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private ActivityManagementService activityManagementService;

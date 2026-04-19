@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.context.event.EventListener;
+import ch.uzh.ifi.hase.soprafs26.event.DestinationVotesUpdatedEvent;
 
 import java.util.List;
 import java.util.Objects;
@@ -94,6 +96,14 @@ public class DestinationController {
         User requester = userService.validateToken(token);
         tripService.getDestinations(tripId, requester.getId());
         return destinationRealtimeService.subscribe(tripId);
+    }
+
+    @EventListener
+    public void handleDestinationVotesUpdated(DestinationVotesUpdatedEvent event) {
+        if (destinationRealtimeService != null) {
+            List<DestinationGetDTO> sharedList = buildSharedDestinationList(event.getTripId(), event.getUserId());
+            destinationRealtimeService.publish(event.getTripId(), sharedList);
+        }
     }
 
     @PutMapping("/trips/{tripId}/destinations/{destinationId}")

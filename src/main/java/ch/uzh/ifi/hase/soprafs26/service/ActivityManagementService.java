@@ -9,6 +9,8 @@ import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteRequestDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteResponseDTO;
+import ch.uzh.ifi.hase.soprafs26.event.DestinationVotesUpdatedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,15 +27,18 @@ public class ActivityManagementService {
     private final DestinationService destinationService;
     private final TripService tripService;
     private final VoteRepository voteRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ActivityManagementService(ActivityRepository activityRepository,
                                      DestinationService destinationService,
                                      TripService tripService,
-                                     VoteRepository voteRepository) {
+                                     VoteRepository voteRepository,
+                                     ApplicationEventPublisher eventPublisher) {
         this.activityRepository = activityRepository;
         this.destinationService = destinationService;
         this.tripService = tripService;
         this.voteRepository = voteRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     public List<Activity> getSelectedActivities(Long tripId, Long destinationId) {
@@ -141,6 +146,8 @@ public class ActivityManagementService {
                 voteRepository.save(vote);
             }
         }
+
+        eventPublisher.publishEvent(new DestinationVotesUpdatedEvent(this, tripId, userId));
 
         return buildVoteResponse(activity.getId(), userId);
     }
