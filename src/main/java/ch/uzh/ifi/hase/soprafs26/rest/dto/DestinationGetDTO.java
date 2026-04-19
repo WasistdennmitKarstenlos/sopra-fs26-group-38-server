@@ -1,7 +1,7 @@
 package ch.uzh.ifi.hase.soprafs26.rest.dto;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.util.List;
 
 public class DestinationGetDTO implements Serializable {
 
@@ -9,9 +9,13 @@ public class DestinationGetDTO implements Serializable {
 
     private Long id;
     private Long tripId;
-    private String locationName;
+    private String destinationName;
     private Long proposedByUserId;
-    private Date createdAt;
+    private Long upvotes;
+    private Long downvotes;
+    private Long score;
+    private String userVote;
+    private List<ActivitySearchResultDTO> activities;
 
     public Long getId() {
         return id;
@@ -29,12 +33,12 @@ public class DestinationGetDTO implements Serializable {
         this.tripId = tripId;
     }
 
-    public String getLocationName() {
-        return locationName;
+    public String getDestinationName() {
+        return destinationName;
     }
 
-    public void setLocationName(String locationName) {
-        this.locationName = locationName;
+    public void setDestinationName(String destinationName) {
+        this.destinationName = destinationName;
     }
 
     public Long getProposedByUserId() {
@@ -45,11 +49,43 @@ public class DestinationGetDTO implements Serializable {
         this.proposedByUserId = proposedByUserId;
     }
 
-    public Date getCreatedAt() {
-        return createdAt;
+    public Long getUpvotes() {
+        return upvotes;
     }
 
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
+    public void setUpvotes(Long upvotes) {
+        this.upvotes = upvotes;
+    }
+
+    public Long getDownvotes() {
+        return downvotes;
+    }
+
+    public void setDownvotes(Long downvotes) {
+        this.downvotes = downvotes;
+    }
+
+    public Long getScore() {
+        return score;
+    }
+
+    public void setScore(Long score) {
+        this.score = score;
+    }
+
+    public String getUserVote() {
+        return userVote;
+    }
+
+    public void setUserVote(String userVote) {
+        this.userVote = userVote;
+    }
+
+    public List<ActivitySearchResultDTO> getActivities() {
+        return activities;
+    }
+
+    public void setActivities(List<ActivitySearchResultDTO> activities) {
+        this.activities = activities;
     }
 }

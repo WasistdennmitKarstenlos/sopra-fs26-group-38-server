@@ -28,7 +28,6 @@ public class Trip implements Serializable {
     private Long hostId; // Reference to User who created this trip
 
     @Column(nullable = false, updatable = false)
-    @Temporal(TemporalType.TIMESTAMP)
     private Date creationDate;
 
     @Column(nullable = false)
