@@ -2,7 +2,10 @@ package ch.uzh.ifi.hase.soprafs26.service;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Activity;
 import ch.uzh.ifi.hase.soprafs26.entity.Destination;
+import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityCommentRequestDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -29,6 +32,9 @@ public class ActivityManagementServiceTest {
     @Mock
     private TripService tripService;
 
+    @Mock
+    private VoteRepository voteRepository;
+
     @InjectMocks
     private ActivityManagementService activityManagementService;
 
@@ -45,6 +51,7 @@ public class ActivityManagementServiceTest {
         input.setAddress("Main Street 1");
         input.setRating(4.5);
         input.setPhotoUrl("https://example.com/photo.jpg");
+        input.setComment("Great for rainy days");
 
         Activity saved = new Activity();
         saved.setId(1L);
@@ -55,6 +62,7 @@ public class ActivityManagementServiceTest {
         saved.setAddress("Main Street 1");
         saved.setRating(4.5);
         saved.setPhotoUrl("https://example.com/photo.jpg");
+        saved.setComment("Great for rainy days");
 
         Destination destination = new Destination();
         destination.setId(2L);
@@ -70,6 +78,7 @@ public class ActivityManagementServiceTest {
         assertEquals("place-1", result.getPlaceId());
         assertEquals("City Museum", result.getName());
         assertEquals("https://example.com/photo.jpg", result.getPhotoUrl());
+        assertEquals("Great for rainy days", result.getComment());
     }
 
     @Test
@@ -117,6 +126,7 @@ public class ActivityManagementServiceTest {
         Activity input = new Activity();
         input.setPlaceId("place-1");
         input.setName("City Museum Updated");
+        input.setComment("  Better than expected  ");
 
         Activity existing = new Activity();
         existing.setId(10L);
@@ -124,6 +134,7 @@ public class ActivityManagementServiceTest {
         existing.setDestinationId(2L);
         existing.setPlaceId("place-1");
         existing.setName("Old");
+        existing.setComment("old comment");
 
         Destination destination = new Destination();
         destination.setId(2L);
@@ -131,10 +142,64 @@ public class ActivityManagementServiceTest {
 
         Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(destination);
         Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(10L, 1L, 2L)).thenReturn(Optional.of(existing));
-        Mockito.when(activityRepository.save(Mockito.any(Activity.class))).thenReturn(existing);
+        Mockito.when(activityRepository.save(Mockito.any(Activity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Activity result = activityManagementService.updateActivity(1L, 2L, 10L, input);
         assertEquals("City Museum Updated", result.getName());
+        assertEquals("Better than expected", result.getComment());
+    }
+
+    @Test
+    public void updateActivityComment_success() {
+        Activity existing = new Activity();
+        existing.setId(10L);
+        existing.setTripId(1L);
+        existing.setDestinationId(2L);
+        existing.setComment("old");
+
+        Trip trip = new Trip("Trip", "ROOM1", 1L);
+        trip.setId(1L);
+        trip.setStatus(Trip.TripStatus.ACTIVE);
+
+        Destination destination = new Destination();
+        destination.setId(2L);
+        destination.setTripId(1L);
+
+        ActivityCommentRequestDTO request = new ActivityCommentRequestDTO();
+        request.setComment("  New comment from user  ");
+
+        Mockito.when(activityRepository.findById(10L)).thenReturn(Optional.of(existing));
+        Mockito.when(tripService.getTripForParticipant(1L, 5L)).thenReturn(trip);
+        Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(destination);
+        Mockito.when(activityRepository.save(Mockito.any(Activity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Activity updated = activityManagementService.updateActivityComment(10L, 5L, request);
+
+        assertEquals(10L, updated.getId());
+        assertEquals("New comment from user", updated.getComment());
+    }
+
+    @Test
+    public void addActivity_commentTooLong_throwsBadRequest() {
+        Activity input = new Activity();
+        input.setPlaceId("place-1");
+        input.setName("City Museum");
+        input.setComment("x".repeat(281));
+
+        Destination destination = new Destination();
+        destination.setId(2L);
+        destination.setTripId(1L);
+
+        Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(destination);
+        Mockito.when(activityRepository.findByTripIdAndDestinationIdAndPlaceId(1L, 2L, "place-1"))
+                .thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> activityManagementService.addActivity(1L, 2L, input)
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
 
     @Test

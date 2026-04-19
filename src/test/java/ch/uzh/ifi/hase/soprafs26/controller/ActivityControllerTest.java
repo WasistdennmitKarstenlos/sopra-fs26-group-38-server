@@ -2,6 +2,7 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Activity;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityCommentRequestDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
@@ -88,6 +89,7 @@ public class ActivityControllerTest {
         activity.setId(10L);
         activity.setPlaceId("saved-place");
         activity.setName("Saved Place");
+        activity.setComment("Looks promising");
 
         Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
         Mockito.when(activityManagementService.getSelectedActivities(1L, 2L)).thenReturn(List.of(activity));
@@ -97,7 +99,8 @@ public class ActivityControllerTest {
                             .header("Authorization", "Bearer token")
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$[0].placeId").value("saved-place"));
+                    .andExpect(jsonPath("$[0].placeId").value("saved-place"))
+                    .andExpect(jsonPath("$[0].comment").value("Looks promising"));
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }
@@ -112,11 +115,13 @@ public class ActivityControllerTest {
         postDTO.setPlaceId("place-1");
         postDTO.setName("City Museum");
         postDTO.setAddress("Main Street 1");
+        postDTO.setComment("Great backup option");
 
         Activity saved = new Activity();
         saved.setId(10L);
         saved.setPlaceId("place-1");
         saved.setName("City Museum");
+        saved.setComment("Great backup option");
 
         Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
         Mockito.when(activityManagementService.addActivity(Mockito.eq(1L), Mockito.eq(2L), Mockito.any(Activity.class)))
@@ -129,7 +134,8 @@ public class ActivityControllerTest {
                             .content(new ObjectMapper().writeValueAsString(postDTO)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.placeId").value("place-1"))
-                    .andExpect(jsonPath("$.name").value("City Museum"));
+                    .andExpect(jsonPath("$.name").value("City Museum"))
+                    .andExpect(jsonPath("$.comment").value("Great backup option"));
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }
@@ -143,11 +149,13 @@ public class ActivityControllerTest {
         ActivityPostDTO postDTO = new ActivityPostDTO();
         postDTO.setPlaceId("place-1");
         postDTO.setName("Updated Museum");
+        postDTO.setComment("Now with better opening hours");
 
         Activity updated = new Activity();
         updated.setId(10L);
         updated.setPlaceId("place-1");
         updated.setName("Updated Museum");
+        updated.setComment("Now with better opening hours");
 
         Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
         Mockito.when(activityManagementService.updateActivity(Mockito.eq(1L), Mockito.eq(2L), Mockito.eq(10L), Mockito.any(Activity.class)))
@@ -160,7 +168,39 @@ public class ActivityControllerTest {
                             .content(new ObjectMapper().writeValueAsString(postDTO)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(10))
-                    .andExpect(jsonPath("$.name").value("Updated Museum"));
+                    .andExpect(jsonPath("$.name").value("Updated Museum"))
+                    .andExpect(jsonPath("$.comment").value("Now with better opening hours"));
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    @Test
+    public void updateActivityComment_success() {
+        User user = new User();
+        user.setId(1L);
+
+        ActivityCommentRequestDTO requestDTO = new ActivityCommentRequestDTO();
+        requestDTO.setComment("This is a must-do activity");
+
+        Activity updated = new Activity();
+        updated.setId(10L);
+        updated.setPlaceId("place-1");
+        updated.setName("Updated Museum");
+        updated.setComment("This is a must-do activity");
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.when(activityManagementService.updateActivityComment(Mockito.eq(10L), Mockito.eq(1L), Mockito.any(ActivityCommentRequestDTO.class)))
+                .thenReturn(updated);
+
+        try {
+            mockMvc.perform(put("/activities/10/comment")
+                            .header("Authorization", "Bearer token")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(new ObjectMapper().writeValueAsString(requestDTO)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(10))
+                    .andExpect(jsonPath("$.comment").value("This is a must-do activity"));
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }
