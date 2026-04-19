@@ -48,7 +48,7 @@ public class ActivityManagementService {
                 .toList();
     }
 
-    public Activity addActivity(Long tripId, Long destinationId, Activity activityInput) {
+    public Activity addActivity(Long tripId, Long destinationId, Long userId, Activity activityInput) {
         tripService.ensureTripIsActiveForMutations(tripId);
         destinationService.getDestinationEntity(tripId, destinationId);
         validateActivity(activityInput);
@@ -68,10 +68,12 @@ public class ActivityManagementService {
         activity.setLatitude(activityInput.getLatitude());
         activity.setLongitude(activityInput.getLongitude());
 
-        return activityRepository.save(activity);
+        Activity saved = activityRepository.save(activity);
+        eventPublisher.publishEvent(new DestinationVotesUpdatedEvent(this, tripId, userId));
+        return saved;
     }
 
-    public Activity updateActivity(Long tripId, Long destinationId, Long activityId, Activity activityUpdate) {
+    public Activity updateActivity(Long tripId, Long destinationId, Long activityId, Long userId, Activity activityUpdate) {
         tripService.ensureTripIsActiveForMutations(tripId);
         destinationService.getDestinationEntity(tripId, destinationId);
         validateActivity(activityUpdate);
@@ -87,10 +89,12 @@ public class ActivityManagementService {
         activity.setLatitude(activityUpdate.getLatitude());
         activity.setLongitude(activityUpdate.getLongitude());
 
-        return activityRepository.save(activity);
+        Activity saved = activityRepository.save(activity);
+        eventPublisher.publishEvent(new DestinationVotesUpdatedEvent(this, tripId, userId));
+        return saved;
     }
 
-    public void deleteActivity(Long tripId, Long destinationId, Long activityId) {
+    public void deleteActivity(Long tripId, Long destinationId, Long activityId, Long userId) {
         tripService.ensureTripIsActiveForMutations(tripId);
         destinationService.getDestinationEntity(tripId, destinationId);
 
@@ -98,6 +102,7 @@ public class ActivityManagementService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Activity not found"));
 
         activityRepository.delete(activity);
+        eventPublisher.publishEvent(new DestinationVotesUpdatedEvent(this, tripId, userId));
     }
 
     // Voting on an activity: users can upvote, downvote, or remove their vote. Each user can only have one vote per activity.
