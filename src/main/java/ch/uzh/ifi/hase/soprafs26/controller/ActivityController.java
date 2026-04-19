@@ -2,6 +2,7 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Activity;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityCommentRequestDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteRequestDTO;
@@ -93,6 +94,16 @@ public class ActivityController {
         return activityManagementService.voteOnActivity(activityId, requester.getId(), voteRequest);
     }
 
+    @PutMapping("/activities/{activityId}/comment")
+    @ResponseStatus(HttpStatus.OK)
+    public ActivitySearchResultDTO updateActivityComment(@PathVariable("activityId") Long activityId,
+                                                         @RequestBody ActivityCommentRequestDTO commentRequest,
+                                                         @RequestHeader(value = "Authorization", required = false) String token) {
+        User requester = userService.validateToken(token);
+        Activity updated = activityManagementService.updateActivityComment(activityId, requester.getId(), commentRequest);
+        return toSearchResultDTO(updated, requester.getId(), activityManagementService);
+    }
+
     @DeleteMapping("/trips/{tripId}/destinations/{destinationId}/activities/{activityId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteActivity(@PathVariable("tripId") Long tripId,
@@ -126,6 +137,7 @@ public class ActivityController {
         activity.setPhotoUrl(activityPostDTO.getPhotoUrl());
         activity.setLatitude(activityPostDTO.getLatitude());
         activity.setLongitude(activityPostDTO.getLongitude());
+        activity.setComment(activityPostDTO.getComment());
         return activity;
     }
 
@@ -142,6 +154,7 @@ public class ActivityController {
         resultDTO.setPhotoUrl(activity.getPhotoUrl());
         resultDTO.setLatitude(activity.getLatitude());
         resultDTO.setLongitude(activity.getLongitude());
+        resultDTO.setComment(activity.getComment());
         
         // Populate vote data if user is authenticated
         if (userId != null) {
