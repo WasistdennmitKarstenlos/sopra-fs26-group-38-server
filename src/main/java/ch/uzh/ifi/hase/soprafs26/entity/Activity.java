@@ -49,6 +49,9 @@ public class Activity implements Serializable {
     @Column
     private Double longitude;
 
+    @Column(length = 280)
+    private String comment;
+
     public Long getId() {
         return id;
     }
@@ -127,5 +130,13 @@ public class Activity implements Serializable {
 
     public void setLongitude(Double longitude) {
         this.longitude = longitude;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
     }
 }
