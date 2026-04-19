@@ -84,8 +84,8 @@ public class DestinationService {
 
         long upvotes = votes.stream().filter(v -> v.getVoteType() == VoteType.UP).count();
         long downvotes = votes.stream().filter(v -> v.getVoteType() == VoteType.DOWN).count();
-        long totalVotes = upvotes + downvotes;
-        long weightedAverage = Math.round((double) totalVotes / activities.size());
+        long netVotes = upvotes - downvotes;
+        long weightedAverage = Math.round((double) netVotes / activities.size());
 
         dto.setUpvotes(upvotes);
         dto.setDownvotes(downvotes);
