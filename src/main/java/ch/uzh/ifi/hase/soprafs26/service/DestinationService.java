@@ -1,35 +1,36 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
+import ch.uzh.ifi.hase.soprafs26.entity.Activity;
 import ch.uzh.ifi.hase.soprafs26.entity.Destination;
-import ch.uzh.ifi.hase.soprafs26.entity.DestinationVote;
-import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.entity.Vote;
 import ch.uzh.ifi.hase.soprafs26.entity.VoteType;
+import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.DestinationRepository;
-import ch.uzh.ifi.hase.soprafs26.repository.DestinationVoteRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationVoteRequestDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationVoteResponseDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Transactional
 public class DestinationService {
 
     private final DestinationRepository destinationRepository;
-    private final DestinationVoteRepository destinationVoteRepository;
+    private final ActivityRepository activityRepository;
+    private final VoteRepository voteRepository;
     private final TripService tripService;
 
     public DestinationService(DestinationRepository destinationRepository,
-                              DestinationVoteRepository destinationVoteRepository,
+                              ActivityRepository activityRepository,
+                              VoteRepository voteRepository,
                               TripService tripService) {
         this.destinationRepository = destinationRepository;
-        this.destinationVoteRepository = destinationVoteRepository;
+        this.activityRepository = activityRepository;
+        this.voteRepository = voteRepository;
         this.tripService = tripService;
     }
 
@@ -67,28 +68,29 @@ public class DestinationService {
     }
 
     public void populateDestinationVoteData(Destination destination, Long userId, DestinationGetDTO dto) {
-        long upvotes = destinationVoteRepository.countByDestinationIdAndVoteType(destination.getId(), VoteType.UP);
-        long downvotes = destinationVoteRepository.countByDestinationIdAndVoteType(destination.getId(), VoteType.DOWN);
-        Optional<DestinationVote> userVote = destinationVoteRepository.findByDestinationIdAndUserId(destination.getId(), userId);
+        List<Activity> activities = activityRepository.findByTripIdAndDestinationIdOrderByIdDesc(
+                destination.getTripId(), destination.getId());
+
+        if (activities.isEmpty()) {
+            dto.setUpvotes(0L);
+            dto.setDownvotes(0L);
+            dto.setScore(0L);
+            dto.setUserVote(null);
+            return;
+        }
+
+        List<Long> activityIds = activities.stream().map(Activity::getId).toList();
+        List<Vote> votes = voteRepository.findByActivityIdIn(activityIds);
+
+        long upvotes = votes.stream().filter(v -> v.getVoteType() == VoteType.UP).count();
+        long downvotes = votes.stream().filter(v -> v.getVoteType() == VoteType.DOWN).count();
+        long totalVotes = upvotes + downvotes;
+        long weightedAverage = Math.round((double) totalVotes / activities.size());
 
         dto.setUpvotes(upvotes);
         dto.setDownvotes(downvotes);
-        dto.setScore(upvotes - downvotes);
-        dto.setUserVote(userVote.map(vote -> vote.getVoteType().name()).orElse(null));
-    }
-
-    private DestinationVoteResponseDTO buildVoteResponse(Long destinationId, Long userId) {
-        long upvotes = destinationVoteRepository.countByDestinationIdAndVoteType(destinationId, VoteType.UP);
-        long downvotes = destinationVoteRepository.countByDestinationIdAndVoteType(destinationId, VoteType.DOWN);
-        Optional<DestinationVote> userVote = destinationVoteRepository.findByDestinationIdAndUserId(destinationId, userId);
-
-        DestinationVoteResponseDTO response = new DestinationVoteResponseDTO();
-        response.setDestinationId(destinationId);
-        response.setUpvotes(upvotes);
-        response.setDownvotes(downvotes);
-        response.setScore(upvotes - downvotes);
-        response.setUserVote(userVote.map(vote -> vote.getVoteType().name()).orElse(null));
-        return response;
+        dto.setScore(weightedAverage);
+        dto.setUserVote(null);
     }
 
     private void validate(Destination destination) {
