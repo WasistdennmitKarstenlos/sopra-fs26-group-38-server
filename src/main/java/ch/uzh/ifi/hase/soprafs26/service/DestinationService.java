@@ -39,7 +39,7 @@ public class DestinationService {
     }
 
     public Destination createDestination(Long tripId, Destination destination) {
-        tripService.getTripById(tripId);
+        tripService.ensureTripIsActiveForMutations(tripId);
         destination.setTripId(tripId);
         validate(destination);
 
@@ -47,6 +47,7 @@ public class DestinationService {
     }
 
     public Destination updateDestination(Long tripId, Long destinationId, Destination destinationUpdate) {
+        tripService.ensureTripIsActiveForMutations(tripId);
         validate(destinationUpdate);
         Destination destination = getDestinationEntity(tripId, destinationId);
         destination.setDestinationName(destinationUpdate.getDestinationName().trim());
@@ -54,6 +55,7 @@ public class DestinationService {
     }
 
     public void deleteDestination(Long tripId, Long destinationId) {
+        tripService.ensureTripIsActiveForMutations(tripId);
         Destination destination = getDestinationEntity(tripId, destinationId);
         destinationRepository.delete(destination);
     }

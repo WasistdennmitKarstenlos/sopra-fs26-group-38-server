@@ -198,6 +198,11 @@ public class TripServiceTest {
     public void updateTripStatus_validInput_success() {
         // given
         Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
+        Destination existingDestination = new Destination();
+        existingDestination.setId(10L);
+        existingDestination.setTripId(1L);
+        existingDestination.setDestinationName("Zurich");
+        Mockito.when(destinationRepository.findByTripIdOrderByIdDesc(1L)).thenReturn(List.of(existingDestination));
 
         // when
         Trip updatedTrip = tripService.updateTripStatus(1L, Trip.TripStatus.EVALUATION);
@@ -205,6 +210,45 @@ public class TripServiceTest {
         // then
         Mockito.verify(tripRepository, Mockito.times(1)).save(Mockito.any());
         assertEquals(Trip.TripStatus.EVALUATION, updatedTrip.getStatus());
+    }
+
+    @Test
+    public void updateTripStatus_noDestinations_badRequest() {
+        Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
+        Mockito.when(destinationRepository.findByTripIdOrderByIdDesc(1L)).thenReturn(List.of());
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> tripService.updateTripStatus(1L, Trip.TripStatus.EVALUATION)
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+    }
+
+    @Test
+    public void updateTripStatus_alreadyEvaluation_conflict() {
+        testTrip.setStatus(Trip.TripStatus.EVALUATION);
+        Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> tripService.updateTripStatus(1L, Trip.TripStatus.EVALUATION)
+        );
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+    }
+
+    @Test
+    public void updateTripStatus_finalized_conflict() {
+        testTrip.setStatus(Trip.TripStatus.FINALIZED);
+        Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> tripService.updateTripStatus(1L, Trip.TripStatus.EVALUATION)
+        );
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
     }
 
     @Test

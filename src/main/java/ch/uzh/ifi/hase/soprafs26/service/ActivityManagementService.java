@@ -44,6 +44,7 @@ public class ActivityManagementService {
     }
 
     public Activity addActivity(Long tripId, Long destinationId, Activity activityInput) {
+        tripService.ensureTripIsActiveForMutations(tripId);
         destinationService.getDestinationEntity(tripId, destinationId);
         validateActivity(activityInput);
 
@@ -66,6 +67,7 @@ public class ActivityManagementService {
     }
 
     public Activity updateActivity(Long tripId, Long destinationId, Long activityId, Activity activityUpdate) {
+        tripService.ensureTripIsActiveForMutations(tripId);
         destinationService.getDestinationEntity(tripId, destinationId);
         validateActivity(activityUpdate);
 
@@ -84,6 +86,7 @@ public class ActivityManagementService {
     }
 
     public void deleteActivity(Long tripId, Long destinationId, Long activityId) {
+        tripService.ensureTripIsActiveForMutations(tripId);
         destinationService.getDestinationEntity(tripId, destinationId);
 
         Activity activity = activityRepository.findByIdAndTripIdAndDestinationId(activityId, tripId, destinationId)

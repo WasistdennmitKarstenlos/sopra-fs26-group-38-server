@@ -162,10 +162,7 @@ public class TripService {
         Trip trip = getTripById(tripId);
         validateDestinationInput(destination);
         ensureParticipant(tripId, userId);
-
-        if (trip.getStatus() != Trip.TripStatus.ACTIVE) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Destinations can only be added while trip is ACTIVE");
-        }
+        ensureTripIsActiveForMutations(trip);
 
         destination.setTripId(tripId);
         destination.setProposedByUserId(userId);
@@ -203,12 +200,35 @@ public class TripService {
         log.debug("Updating trip {} status to: {}", tripId, newStatus);
 
         Trip trip = getTripById(tripId);
+        validateEvaluationTransition(trip, newStatus);
         trip.setStatus(newStatus);
 
         Trip updatedTrip = tripRepository.save(trip);
         log.info("Trip {} status updated to: {}", tripId, newStatus);
 
         return updatedTrip;
+    }
+
+    /**
+     * Shared guard for write operations that are only allowed while the trip is ACTIVE.
+     * Can be reused by other services handling destination/activity/comment/vote mutations.
+     * @param trip trip entity
+     */
+    public void ensureTripIsActiveForMutations(Trip trip) {
+        if (trip.getStatus() != Trip.TripStatus.ACTIVE) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Trip is in read-only mode. Mutations are only allowed while trip is ACTIVE"
+            );
+        }
+    }
+
+    /**
+     * Convenience overload to enforce ACTIVE mode by trip id.
+     * @param tripId target trip id
+     */
+    public void ensureTripIsActiveForMutations(Long tripId) {
+        ensureTripIsActiveForMutations(getTripById(tripId));
     }
 
     /**
@@ -325,5 +345,32 @@ public class TripService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Destination name cannot be empty");
         }
         destination.setDestinationName(destination.getDestinationName().trim());
+    }
+
+    /**
+     * Validates whether the requested status transition is allowed for entering evaluation mode.
+     */
+    private void validateEvaluationTransition(Trip trip, Trip.TripStatus newStatus) {
+        if (newStatus != Trip.TripStatus.EVALUATION) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Only transition to EVALUATION is supported via this endpoint"
+            );
+        }
+
+        if (trip.getStatus() == Trip.TripStatus.EVALUATION) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Trip is already in EVALUATION mode");
+        }
+
+        if (trip.getStatus() == Trip.TripStatus.FINALIZED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Trip is FINALIZED and cannot enter EVALUATION");
+        }
+
+        if (destinationRepository.findByTripIdOrderByIdDesc(trip.getId()).isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "At least one destination is required before entering EVALUATION"
+            );
+        }
     }
 }
