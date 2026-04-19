@@ -1,8 +1,11 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Activity;
+import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteRequestDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteResponseDTO;
 import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
 import ch.uzh.ifi.hase.soprafs26.service.ActivitySearchService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
@@ -43,11 +46,11 @@ public class ActivityController {
                                                           @RequestParam(value = "location", required = false) String location,
                                                           @RequestParam(value = "radius", required = false) Integer radius,
                                                           @RequestHeader(value = "Authorization", required = false) String token) {
-        userService.validateToken(token);
+        User authenticatedUser = userService.validateToken(token);
 
         if (query == null || query.trim().isEmpty()) {
             return activityManagementService.getSelectedActivities(tripId, destinationId).stream()
-                    .map(ActivityController::toSearchResultDTO)
+                    .map(activity -> toSearchResultDTO(activity, authenticatedUser.getId(), activityManagementService))
                     .toList();
         }
 
@@ -63,7 +66,8 @@ public class ActivityController {
         userService.validateToken(token);
         Activity activity = toActivityEntity(activityPostDTO);
         Activity saved = activityManagementService.addActivity(tripId, destinationId, activity);
-        return toSearchResultDTO(saved);
+        User authenticatedUser = userService.validateToken(token);
+        return toSearchResultDTO(saved, authenticatedUser.getId(), activityManagementService);
     }
 
     @PutMapping("/trips/{tripId}/destinations/{destinationId}/activities/{activityId}")
@@ -76,7 +80,17 @@ public class ActivityController {
         userService.validateToken(token);
         Activity update = toActivityEntity(activityPostDTO);
         Activity saved = activityManagementService.updateActivity(tripId, destinationId, activityId, update);
-        return toSearchResultDTO(saved);
+        User authenticatedUser = userService.validateToken(token);
+        return toSearchResultDTO(saved, authenticatedUser.getId(), activityManagementService);
+    }
+
+    @PutMapping("/activities/{activityId}/vote")
+    @ResponseStatus(HttpStatus.OK)
+    public ActivityVoteResponseDTO voteActivity(@PathVariable("activityId") Long activityId,
+                                                @RequestBody ActivityVoteRequestDTO voteRequest,
+                                                @RequestHeader(value = "Authorization", required = false) String token) {
+        var requester = userService.validateToken(token);
+        return activityManagementService.voteOnActivity(activityId, requester.getId(), voteRequest);
     }
 
     @DeleteMapping("/trips/{tripId}/destinations/{destinationId}/activities/{activityId}")
@@ -115,7 +129,7 @@ public class ActivityController {
         return activity;
     }
 
-    private static ActivitySearchResultDTO toSearchResultDTO(Activity activity) {
+    private static ActivitySearchResultDTO toSearchResultDTO(Activity activity, Long userId, ActivityManagementService activityManagementService) {
         ActivitySearchResultDTO resultDTO = new ActivitySearchResultDTO();
         if (activity == null) {
             return resultDTO;
@@ -128,6 +142,12 @@ public class ActivityController {
         resultDTO.setPhotoUrl(activity.getPhotoUrl());
         resultDTO.setLatitude(activity.getLatitude());
         resultDTO.setLongitude(activity.getLongitude());
+        
+        // Populate vote data if user is authenticated
+        if (userId != null) {
+            activityManagementService.populateActivityVoteData(activity, userId, resultDTO);
+        }
+        
         return resultDTO;
     }
 }

@@ -6,6 +6,8 @@ import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationVoteRequestDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationVoteResponseDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
@@ -74,7 +76,8 @@ public class DestinationController {
         }
 
         DestinationGetDTO dto = DTOMapper.INSTANCE.convertEntityToDestinationGetDTO(savedDestination);
-        dto.setActivities(buildActivities(tripId, savedDestination.getId()));
+        dto.setActivities(buildActivities(tripId, savedDestination.getId(), requester.getId()));
+        destinationService.populateDestinationVoteData(savedDestination, requester.getId(), dto);
         return dto;
     }
 
@@ -101,10 +104,23 @@ public class DestinationController {
                                                @PathVariable("destinationId") Long destinationId,
                                                @RequestBody DestinationPostDTO destinationPostDTO,
                                                @RequestHeader(value = "Authorization", required = false) String token) {
-        userService.validateToken(token);
+        User requester = userService.validateToken(token);
         Destination update = DTOMapper.INSTANCE.convertDestinationPostDTOtoEntity(destinationPostDTO);
         Destination saved = destinationService.updateDestination(tripId, destinationId, update);
-        return DTOMapper.INSTANCE.convertEntityToDestinationGetDTO(saved);
+        DestinationGetDTO dto = DTOMapper.INSTANCE.convertEntityToDestinationGetDTO(saved);
+        dto.setActivities(buildActivities(tripId, saved.getId(), requester.getId()));
+        destinationService.populateDestinationVoteData(saved, requester.getId(), dto);
+        return dto;
+    }
+
+    @PutMapping("/trips/{tripId}/destinations/{destinationId}/vote")
+    @ResponseStatus(HttpStatus.OK)
+    public DestinationVoteResponseDTO voteDestination(@PathVariable("tripId") Long tripId,
+                                                      @PathVariable("destinationId") Long destinationId,
+                                                      @RequestBody DestinationVoteRequestDTO voteRequest,
+                                                      @RequestHeader(value = "Authorization", required = false) String token) {
+        User requester = userService.validateToken(token);
+        return destinationService.voteOnDestination(tripId, destinationId, requester.getId(), voteRequest);
     }
 
     @DeleteMapping("/trips/{tripId}/destinations/{destinationId}")
@@ -121,19 +137,20 @@ public class DestinationController {
                 .filter(Objects::nonNull)
                 .map(destination -> {
                     DestinationGetDTO dto = DTOMapper.INSTANCE.convertEntityToDestinationGetDTO(destination);
-                    dto.setActivities(buildActivities(tripId, destination.getId()));
+                    dto.setActivities(buildActivities(tripId, destination.getId(), requesterId));
+                    destinationService.populateDestinationVoteData(destination, requesterId, dto);
                     return dto;
                 })
                 .collect(Collectors.toList());
     }
 
-    private List<ActivitySearchResultDTO> buildActivities(Long tripId, Long destinationId) {
+    private List<ActivitySearchResultDTO> buildActivities(Long tripId, Long destinationId, Long userId) {
         return activityManagementService.getSelectedActivities(tripId, destinationId).stream()
-                .map(DestinationController::toSearchResultDTO)
+                .map(activity -> toSearchResultDTO(activity, userId, activityManagementService))
                 .toList();
     }
 
-    private static ActivitySearchResultDTO toSearchResultDTO(Activity activity) {
+    private static ActivitySearchResultDTO toSearchResultDTO(Activity activity, Long userId, ActivityManagementService activityManagementService) {
         ActivitySearchResultDTO resultDTO = new ActivitySearchResultDTO();
         if (activity == null) {
             return resultDTO;
@@ -146,6 +163,12 @@ public class DestinationController {
         resultDTO.setPhotoUrl(activity.getPhotoUrl());
         resultDTO.setLatitude(activity.getLatitude());
         resultDTO.setLongitude(activity.getLongitude());
+        
+        // Populate vote data if user is authenticated
+        if (userId != null) {
+            activityManagementService.populateActivityVoteData(activity, userId, resultDTO);
+        }
+        
         return resultDTO;
     }
 }

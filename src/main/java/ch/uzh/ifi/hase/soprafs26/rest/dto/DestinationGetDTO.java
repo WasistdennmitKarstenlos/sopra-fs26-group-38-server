@@ -11,6 +11,10 @@ public class DestinationGetDTO implements Serializable {
     private Long tripId;
     private String destinationName;
     private Long proposedByUserId;
+    private Long upvotes;
+    private Long downvotes;
+    private Long score;
+    private String userVote;
     private List<ActivitySearchResultDTO> activities;
 
     public Long getId() {
@@ -43,6 +47,38 @@ public class DestinationGetDTO implements Serializable {
 
     public void setProposedByUserId(Long proposedByUserId) {
         this.proposedByUserId = proposedByUserId;
+    }
+
+    public Long getUpvotes() {
+        return upvotes;
+    }
+
+    public void setUpvotes(Long upvotes) {
+        this.upvotes = upvotes;
+    }
+
+    public Long getDownvotes() {
+        return downvotes;
+    }
+
+    public void setDownvotes(Long downvotes) {
+        this.downvotes = downvotes;
+    }
+
+    public Long getScore() {
+        return score;
+    }
+
+    public void setScore(Long score) {
+        this.score = score;
+    }
+
+    public String getUserVote() {
+        return userVote;
+    }
+
+    public void setUserVote(String userVote) {
+        this.userVote = userVote;
     }
 
     public List<ActivitySearchResultDTO> getActivities() {

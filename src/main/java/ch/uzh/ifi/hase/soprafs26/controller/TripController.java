@@ -1,20 +1,32 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.TripGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.InviteDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.JoinTripRequestDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.JoinTripResponseDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.TripGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
 import ch.uzh.ifi.hase.soprafs26.service.TripService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * TripController
@@ -45,8 +57,8 @@ public class TripController {
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public List<TripGetDTO> getAllTrips(@RequestHeader(value = "Authorization", required = false) String token) {
-        userService.validateToken(token);
-        List<Trip> trips = tripService.getAllTrips();
+        User authenticatedUser = userService.validateToken(token);
+        List<Trip> trips = tripService.getTripsForUser(authenticatedUser.getId());
         return trips.stream()
                 .map(DTOMapper.INSTANCE::convertEntityToTripGetDTO)
                 .collect(Collectors.toList());
@@ -81,20 +93,26 @@ public class TripController {
     }
 
     /**
-     * Join a trip using a room code.
+     * Join a trip using a room code and room username.
      * Requires authentication and records membership for destination permissions.
-     * @param roomCode room code to join
+     * @param requestDTO request body containing roomCode and roomUsername
      * @param token authorization header
      * @return joined trip details
      */
-    @PostMapping("/join/{roomCode}")
+    @PostMapping("/join")
     @ResponseStatus(HttpStatus.OK)
-    public TripGetDTO joinTripByRoomCode(
-            @PathVariable String roomCode,
+    public JoinTripResponseDTO joinTrip(
+            @RequestBody JoinTripRequestDTO requestDTO,
             @RequestHeader(value = "Authorization", required = false) String token) {
         User requester = userService.validateToken(token);
-        Trip trip = tripService.joinTripByRoomCode(roomCode, requester.getId());
-        return DTOMapper.INSTANCE.convertEntityToTripGetDTO(trip);
+        Trip trip = tripService.joinTripByRoomCode(requestDTO.getRoomCode(), requester.getId(), requestDTO.getRoomUsername());
+
+        JoinTripResponseDTO response = new JoinTripResponseDTO();
+        response.setTripId(trip.getId());
+        response.setRoomCode(trip.getRoomCode());
+        response.setRoomUsername(requestDTO.getRoomUsername());
+        response.setUserId(requester.getId());
+        return response;
     }
 
     /**
@@ -123,9 +141,8 @@ public class TripController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public TripGetDTO createTrip(@RequestBody TripPostDTO tripPostDTO,
-                                 @RequestHeader(value = "Authorization", required = false) String token) {
+                                  @RequestHeader(value = "Authorization", required = false) String token) {
         User authenticatedUser = userService.validateToken(token);
-
         Trip trip = DTOMapper.INSTANCE.convertTripPostDTOtoEntity(tripPostDTO);
         trip.setHostId(authenticatedUser.getId());
         

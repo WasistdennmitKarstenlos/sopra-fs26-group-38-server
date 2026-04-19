@@ -1,20 +1,21 @@
 package ch.uzh.ifi.hase.soprafs26.entity;
 
-import java.io.Serializable;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.io.Serializable;
 
 @Entity
-@Table(name = "TRIPMEMBERSHIP", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"tripId", "userId"})
+@Table(name = "VOTE", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"activityId", "userId"})
 })
-public class TripMembership implements Serializable {
+public class Vote implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -23,27 +24,23 @@ public class TripMembership implements Serializable {
     private Long id;
 
     @Column(nullable = false)
-    private Long tripId;
+    private Long activityId;
 
     @Column(nullable = false)
     private Long userId;
 
-    @Column
-    private String roomUsername;
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private VoteType voteType;
 
-    public TripMembership() {
+    public Vote() {
         // JPA default constructor
     }
 
-    public TripMembership(Long tripId, Long userId) {
-        this.tripId = tripId;
+    public Vote(Long activityId, Long userId, VoteType voteType) {
+        this.activityId = activityId;
         this.userId = userId;
-    }
-
-    public TripMembership(Long tripId, Long userId, String roomUsername) {
-        this.tripId = tripId;
-        this.userId = userId;
-        this.roomUsername = roomUsername;
+        this.voteType = voteType;
     }
 
     public Long getId() {
@@ -54,12 +51,12 @@ public class TripMembership implements Serializable {
         this.id = id;
     }
 
-    public Long getTripId() {
-        return tripId;
+    public Long getActivityId() {
+        return activityId;
     }
 
-    public void setTripId(Long tripId) {
-        this.tripId = tripId;
+    public void setActivityId(Long activityId) {
+        this.activityId = activityId;
     }
 
     public Long getUserId() {
@@ -70,11 +67,11 @@ public class TripMembership implements Serializable {
         this.userId = userId;
     }
 
-    public String getRoomUsername() {
-        return roomUsername;
+    public VoteType getVoteType() {
+        return voteType;
     }
 
-    public void setRoomUsername(String roomUsername) {
-        this.roomUsername = roomUsername;
+    public void setVoteType(VoteType voteType) {
+        this.voteType = voteType;
     }
 }

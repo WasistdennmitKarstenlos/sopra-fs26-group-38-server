@@ -1,11 +1,12 @@
 package ch.uzh.ifi.hase.soprafs26.repository;
 
-import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
+import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 
 @Repository("tripRepository")
 public interface TripRepository extends JpaRepository<Trip, Long> {
@@ -30,4 +31,11 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
      * @return Optional containing the trip if found
      */
     Optional<Trip> findByNameAndHostId(String name, Long hostId);
+
+    /**
+     * Find all trips whose IDs are in the given list, ordered newest first
+     * @param ids list of trip IDs
+     * @return trips ordered by creation date descending
+     */
+    List<Trip> findByIdInOrderByCreationDateDesc(List<Long> ids);
 }
