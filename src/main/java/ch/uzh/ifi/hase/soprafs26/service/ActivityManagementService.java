@@ -6,6 +6,7 @@ import ch.uzh.ifi.hase.soprafs26.entity.Vote;
 import ch.uzh.ifi.hase.soprafs26.entity.VoteType;
 import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityCommentRequestDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteRequestDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteResponseDTO;
@@ -20,6 +21,8 @@ import java.util.Optional;
 @Service
 @Transactional
 public class ActivityManagementService {
+
+    private static final int MAX_COMMENT_LENGTH = 280;
 
     private final ActivityRepository activityRepository;
     private final DestinationService destinationService;
@@ -62,6 +65,7 @@ public class ActivityManagementService {
         activity.setPhotoUrl(activityInput.getPhotoUrl());
         activity.setLatitude(activityInput.getLatitude());
         activity.setLongitude(activityInput.getLongitude());
+        activity.setComment(normalizeComment(activityInput.getComment()));
 
         return activityRepository.save(activity);
     }
@@ -81,7 +85,24 @@ public class ActivityManagementService {
         activity.setPhotoUrl(activityUpdate.getPhotoUrl());
         activity.setLatitude(activityUpdate.getLatitude());
         activity.setLongitude(activityUpdate.getLongitude());
+        activity.setComment(normalizeComment(activityUpdate.getComment()));
 
+        return activityRepository.save(activity);
+    }
+
+    public Activity updateActivityComment(Long activityId, Long userId, ActivityCommentRequestDTO commentRequest) {
+        if (commentRequest == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Comment payload is required");
+        }
+
+        Activity activity = activityRepository.findById(activityId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Activity not found"));
+
+        Trip trip = tripService.getTripForParticipant(activity.getTripId(), userId);
+        tripService.ensureTripIsActiveForMutations(trip);
+        destinationService.getDestinationEntity(activity.getTripId(), activity.getDestinationId());
+
+        activity.setComment(normalizeComment(commentRequest.getComment()));
         return activityRepository.save(activity);
     }
 
@@ -184,5 +205,25 @@ public class ActivityManagementService {
         if (activity.getName() == null || activity.getName().trim().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name cannot be empty");
         }
+        normalizeComment(activity.getComment());
+    }
+
+    private String normalizeComment(String comment) {
+        if (comment == null) {
+            return null;
+        }
+
+        String normalized = comment.trim();
+        if (normalized.isEmpty()) {
+            return null;
+        }
+        if (normalized.length() > MAX_COMMENT_LENGTH) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Comment cannot exceed " + MAX_COMMENT_LENGTH + " characters"
+            );
+        }
+
+        return normalized;
     }
 }
