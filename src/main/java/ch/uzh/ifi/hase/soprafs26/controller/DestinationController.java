@@ -6,8 +6,6 @@ import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationVoteRequestDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationVoteResponseDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
@@ -111,16 +109,6 @@ public class DestinationController {
         dto.setActivities(buildActivities(tripId, saved.getId(), requester.getId()));
         destinationService.populateDestinationVoteData(saved, requester.getId(), dto);
         return dto;
-    }
-
-    @PutMapping("/trips/{tripId}/destinations/{destinationId}/vote")
-    @ResponseStatus(HttpStatus.OK)
-    public DestinationVoteResponseDTO voteDestination(@PathVariable("tripId") Long tripId,
-                                                      @PathVariable("destinationId") Long destinationId,
-                                                      @RequestBody DestinationVoteRequestDTO voteRequest,
-                                                      @RequestHeader(value = "Authorization", required = false) String token) {
-        User requester = userService.validateToken(token);
-        return destinationService.voteOnDestination(tripId, destinationId, requester.getId(), voteRequest);
     }
 
     @DeleteMapping("/trips/{tripId}/destinations/{destinationId}")

@@ -66,46 +66,6 @@ public class DestinationService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Destination not found"));
     }
 
-    public DestinationVoteResponseDTO voteOnDestination(Long tripId,
-                                                        Long destinationId,
-                                                        Long userId,
-                                                        DestinationVoteRequestDTO voteRequest) {
-        if (voteRequest == null || voteRequest.getVoteType() == null || voteRequest.getVoteType().trim().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "voteType is required");
-        }
-
-        VoteType voteType;
-        try {
-            voteType = VoteType.valueOf(voteRequest.getVoteType().trim().toUpperCase());
-        } catch (IllegalArgumentException ex) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid vote type. Use UP or DOWN.");
-        }
-
-        Trip trip = tripService.getTripForParticipant(tripId, userId);
-        if (trip.getStatus() != Trip.TripStatus.ACTIVE) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Voting is only allowed while the trip is ACTIVE");
-        }
-
-        Destination destination = getDestinationEntity(tripId, destinationId);
-
-        Optional<DestinationVote> existingVote = destinationVoteRepository
-                .findByDestinationIdAndUserId(destination.getId(), userId);
-
-        if (existingVote.isEmpty()) {
-            destinationVoteRepository.save(new DestinationVote(destination.getId(), userId, voteType));
-        } else {
-            DestinationVote vote = existingVote.get();
-            if (vote.getVoteType() == voteType) {
-                destinationVoteRepository.delete(vote);
-            } else {
-                vote.setVoteType(voteType);
-                destinationVoteRepository.save(vote);
-            }
-        }
-
-        return buildVoteResponse(destination.getId(), userId);
-    }
-
     public void populateDestinationVoteData(Destination destination, Long userId, DestinationGetDTO dto) {
         long upvotes = destinationVoteRepository.countByDestinationIdAndVoteType(destination.getId(), VoteType.UP);
         long downvotes = destinationVoteRepository.countByDestinationIdAndVoteType(destination.getId(), VoteType.DOWN);
