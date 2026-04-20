@@ -124,7 +124,7 @@ public class ActivityControllerTest {
         saved.setComment("Great backup option");
 
         Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
-        Mockito.when(activityManagementService.addActivity(Mockito.eq(1L), Mockito.eq(2L), Mockito.any(Activity.class)))
+        Mockito.when(activityManagementService.addActivity(Mockito.eq(1L), Mockito.eq(2L), Mockito.eq(1L), Mockito.any(Activity.class)))
                 .thenReturn(saved);
 
         try {
@@ -158,7 +158,7 @@ public class ActivityControllerTest {
         updated.setComment("Now with better opening hours");
 
         Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
-        Mockito.when(activityManagementService.updateActivity(Mockito.eq(1L), Mockito.eq(2L), Mockito.eq(10L), Mockito.any(Activity.class)))
+        Mockito.when(activityManagementService.updateActivity(Mockito.eq(1L), Mockito.eq(2L), Mockito.eq(10L), Mockito.eq(1L), Mockito.any(Activity.class)))
                 .thenReturn(updated);
 
         try {

@@ -10,6 +10,8 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityCommentRequestDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteRequestDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteResponseDTO;
+import ch.uzh.ifi.hase.soprafs26.event.DestinationVotesUpdatedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,15 +30,18 @@ public class ActivityManagementService {
     private final DestinationService destinationService;
     private final TripService tripService;
     private final VoteRepository voteRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ActivityManagementService(ActivityRepository activityRepository,
                                      DestinationService destinationService,
                                      TripService tripService,
-                                     VoteRepository voteRepository) {
+                                     VoteRepository voteRepository,
+                                     ApplicationEventPublisher eventPublisher) {
         this.activityRepository = activityRepository;
         this.destinationService = destinationService;
         this.tripService = tripService;
         this.voteRepository = voteRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     public List<Activity> getSelectedActivities(Long tripId, Long destinationId) {
@@ -46,7 +51,7 @@ public class ActivityManagementService {
                 .toList();
     }
 
-    public Activity addActivity(Long tripId, Long destinationId, Activity activityInput) {
+    public Activity addActivity(Long tripId, Long destinationId, Long userId, Activity activityInput) {
         tripService.ensureTripIsActiveForMutations(tripId);
         destinationService.getDestinationEntity(tripId, destinationId);
         validateActivity(activityInput);
@@ -67,10 +72,12 @@ public class ActivityManagementService {
         activity.setLongitude(activityInput.getLongitude());
         activity.setComment(normalizeComment(activityInput.getComment()));
 
-        return activityRepository.save(activity);
+        Activity saved = activityRepository.save(activity);
+        eventPublisher.publishEvent(new DestinationVotesUpdatedEvent(this, tripId, userId));
+        return saved;
     }
 
-    public Activity updateActivity(Long tripId, Long destinationId, Long activityId, Activity activityUpdate) {
+    public Activity updateActivity(Long tripId, Long destinationId, Long activityId, Long userId, Activity activityUpdate) {
         tripService.ensureTripIsActiveForMutations(tripId);
         destinationService.getDestinationEntity(tripId, destinationId);
         validateActivity(activityUpdate);
@@ -87,7 +94,9 @@ public class ActivityManagementService {
         activity.setLongitude(activityUpdate.getLongitude());
         activity.setComment(normalizeComment(activityUpdate.getComment()));
 
-        return activityRepository.save(activity);
+        Activity saved = activityRepository.save(activity);
+        eventPublisher.publishEvent(new DestinationVotesUpdatedEvent(this, tripId, userId));
+        return saved;
     }
 
     public Activity updateActivityComment(Long activityId, Long userId, ActivityCommentRequestDTO commentRequest) {
@@ -114,6 +123,7 @@ public class ActivityManagementService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Activity not found"));
 
         activityRepository.delete(activity);
+        eventPublisher.publishEvent(new DestinationVotesUpdatedEvent(this, tripId, userId));
     }
 
     // Voting on an activity: users can upvote, downvote, or remove their vote. Each user can only have one vote per activity.
@@ -162,6 +172,8 @@ public class ActivityManagementService {
                 voteRepository.save(vote);
             }
         }
+
+        eventPublisher.publishEvent(new DestinationVotesUpdatedEvent(this, tripId, userId));
 
         return buildVoteResponse(activity.getId(), userId);
     }

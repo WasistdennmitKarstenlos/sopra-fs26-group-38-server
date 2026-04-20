@@ -6,6 +6,7 @@ import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityCommentRequestDTO;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -34,6 +35,7 @@ public class ActivityManagementServiceTest {
 
     @Mock
     private VoteRepository voteRepository;
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private ActivityManagementService activityManagementService;
@@ -73,7 +75,7 @@ public class ActivityManagementServiceTest {
                 .thenReturn(Optional.empty());
         Mockito.when(activityRepository.save(Mockito.any(Activity.class))).thenReturn(saved);
 
-        Activity result = activityManagementService.addActivity(1L, 2L, input);
+        Activity result = activityManagementService.addActivity(1L, 2L, 100L, input);
 
         assertEquals("place-1", result.getPlaceId());
         assertEquals("City Museum", result.getName());
@@ -95,7 +97,7 @@ public class ActivityManagementServiceTest {
         Mockito.when(activityRepository.findByTripIdAndDestinationIdAndPlaceId(1L, 2L, "place-1"))
                 .thenReturn(Optional.of(new Activity()));
 
-        assertThrows(ResponseStatusException.class, () -> activityManagementService.addActivity(1L, 2L, input));
+        assertThrows(ResponseStatusException.class, () -> activityManagementService.addActivity(1L, 2L, 100L, input));
     }
 
     @Test
@@ -144,7 +146,7 @@ public class ActivityManagementServiceTest {
         Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(10L, 1L, 2L)).thenReturn(Optional.of(existing));
         Mockito.when(activityRepository.save(Mockito.any(Activity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Activity result = activityManagementService.updateActivity(1L, 2L, 10L, input);
+        Activity result = activityManagementService.updateActivity(1L, 2L, 10L, 100L, input);
         assertEquals("City Museum Updated", result.getName());
         assertEquals("Better than expected", result.getComment());
     }
@@ -216,7 +218,7 @@ public class ActivityManagementServiceTest {
         Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(destination);
         Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(10L, 1L, 2L)).thenReturn(Optional.of(existing));
 
-        activityManagementService.deleteActivity(1L, 2L, 10L);
+        activityManagementService.deleteActivity(1L, 2L, 10L, 100L);
 
         Mockito.verify(activityRepository, Mockito.times(1)).delete(existing);
     }
@@ -230,7 +232,7 @@ public class ActivityManagementServiceTest {
         Mockito.doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "read-only"))
                 .when(tripService).ensureTripIsActiveForMutations(1L);
 
-        assertThrows(ResponseStatusException.class, () -> activityManagementService.addActivity(1L, 2L, input));
+        assertThrows(ResponseStatusException.class, () -> activityManagementService.addActivity(1L, 2L, 100L, input));
         Mockito.verifyNoInteractions(destinationService, activityRepository);
     }
 
@@ -243,7 +245,7 @@ public class ActivityManagementServiceTest {
         Mockito.doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "read-only"))
                 .when(tripService).ensureTripIsActiveForMutations(1L);
 
-        assertThrows(ResponseStatusException.class, () -> activityManagementService.updateActivity(1L, 2L, 10L, input));
+        assertThrows(ResponseStatusException.class, () -> activityManagementService.updateActivity(1L, 2L, 10L, 100L, input));
         Mockito.verifyNoInteractions(destinationService, activityRepository);
     }
 
@@ -252,7 +254,7 @@ public class ActivityManagementServiceTest {
         Mockito.doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "read-only"))
                 .when(tripService).ensureTripIsActiveForMutations(1L);
 
-        assertThrows(ResponseStatusException.class, () -> activityManagementService.deleteActivity(1L, 2L, 10L));
+        assertThrows(ResponseStatusException.class, () -> activityManagementService.deleteActivity(1L, 2L, 10L, 100L));
         Mockito.verifyNoInteractions(destinationService, activityRepository);
     }
 }

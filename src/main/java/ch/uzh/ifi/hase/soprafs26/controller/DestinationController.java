@@ -6,8 +6,6 @@ import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationVoteRequestDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationVoteResponseDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
@@ -26,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.context.event.EventListener;
+import ch.uzh.ifi.hase.soprafs26.event.DestinationVotesUpdatedEvent;
 
 import java.util.List;
 import java.util.Objects;
@@ -98,6 +98,14 @@ public class DestinationController {
         return destinationRealtimeService.subscribe(tripId);
     }
 
+    @EventListener
+    public void handleDestinationVotesUpdated(DestinationVotesUpdatedEvent event) {
+        if (destinationRealtimeService != null) {
+            List<DestinationGetDTO> sharedList = buildSharedDestinationList(event.getTripId(), event.getUserId());
+            destinationRealtimeService.publish(event.getTripId(), sharedList);
+        }
+    }
+
     @PutMapping("/trips/{tripId}/destinations/{destinationId}")
     @ResponseStatus(HttpStatus.OK)
     public DestinationGetDTO updateDestination(@PathVariable("tripId") Long tripId,
@@ -111,16 +119,6 @@ public class DestinationController {
         dto.setActivities(buildActivities(tripId, saved.getId(), requester.getId()));
         destinationService.populateDestinationVoteData(saved, requester.getId(), dto);
         return dto;
-    }
-
-    @PutMapping("/trips/{tripId}/destinations/{destinationId}/vote")
-    @ResponseStatus(HttpStatus.OK)
-    public DestinationVoteResponseDTO voteDestination(@PathVariable("tripId") Long tripId,
-                                                      @PathVariable("destinationId") Long destinationId,
-                                                      @RequestBody DestinationVoteRequestDTO voteRequest,
-                                                      @RequestHeader(value = "Authorization", required = false) String token) {
-        User requester = userService.validateToken(token);
-        return destinationService.voteOnDestination(tripId, destinationId, requester.getId(), voteRequest);
     }
 
     @DeleteMapping("/trips/{tripId}/destinations/{destinationId}")
