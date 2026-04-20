@@ -35,6 +35,8 @@ public class ActivityManagementServiceTest {
 
     @Mock
     private VoteRepository voteRepository;
+
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
@@ -198,7 +200,7 @@ public class ActivityManagementServiceTest {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> activityManagementService.addActivity(1L, 2L, input)
+                () -> activityManagementService.addActivity(1L, 2L, 100L, input)
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
@@ -218,7 +220,7 @@ public class ActivityManagementServiceTest {
         Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(destination);
         Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(10L, 1L, 2L)).thenReturn(Optional.of(existing));
 
-        activityManagementService.deleteActivity(1L, 2L, 10L, 100L);
+        activityManagementService.deleteActivity(1L, 100L, 2L, 10L);
 
         Mockito.verify(activityRepository, Mockito.times(1)).delete(existing);
     }
@@ -254,7 +256,7 @@ public class ActivityManagementServiceTest {
         Mockito.doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "read-only"))
                 .when(tripService).ensureTripIsActiveForMutations(1L);
 
-        assertThrows(ResponseStatusException.class, () -> activityManagementService.deleteActivity(1L, 2L, 10L, 100L));
+        assertThrows(ResponseStatusException.class, () -> activityManagementService.deleteActivity(1L, 100L, 2L, 10L));
         Mockito.verifyNoInteractions(destinationService, activityRepository);
     }
 }

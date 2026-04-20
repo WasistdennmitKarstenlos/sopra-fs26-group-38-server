@@ -115,7 +115,7 @@ public class ActivityManagementService {
         return activityRepository.save(activity);
     }
 
-    public void deleteActivity(Long tripId, Long destinationId, Long activityId) {
+    public void deleteActivity(Long tripId, Long userId, Long destinationId, Long activityId) {
         tripService.ensureTripIsActiveForMutations(tripId);
         destinationService.getDestinationEntity(tripId, destinationId);
 
