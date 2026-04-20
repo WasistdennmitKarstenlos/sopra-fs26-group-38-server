@@ -119,7 +119,7 @@ public class ActivityControllerTest {
         saved.setName("City Museum");
 
         Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
-        Mockito.when(activityManagementService.addActivity(Mockito.eq(1L), Mockito.eq(2L), Mockito.any(Activity.class)))
+        Mockito.when(activityManagementService.addActivity(Mockito.eq(1L), Mockito.eq(2L), Mockito.eq(1L), Mockito.any(Activity.class)))
                 .thenReturn(saved);
 
         try {
@@ -150,7 +150,7 @@ public class ActivityControllerTest {
         updated.setName("Updated Museum");
 
         Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
-        Mockito.when(activityManagementService.updateActivity(Mockito.eq(1L), Mockito.eq(2L), Mockito.eq(10L), Mockito.any(Activity.class)))
+        Mockito.when(activityManagementService.updateActivity(Mockito.eq(1L), Mockito.eq(2L), Mockito.eq(10L), Mockito.eq(1L), Mockito.any(Activity.class)))
                 .thenReturn(updated);
 
         try {
