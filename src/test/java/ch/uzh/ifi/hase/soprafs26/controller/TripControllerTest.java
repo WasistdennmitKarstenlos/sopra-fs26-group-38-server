@@ -121,32 +121,7 @@ public class TripControllerTest {
                 .andExpect(jsonPath("$.name", is(trip.getName())))
                 .andExpect(jsonPath("$.roomCode", is(trip.getRoomCode())));
     }
-
-    @Test
-    public void getTripByRoomCode_validCode_success() throws Exception {
-        // given
-        Trip trip = new Trip();
-        trip.setId(1L);
-        trip.setName("Paris Vacation");
-        trip.setRoomCode("ABC123");
-        trip.setHostId(1L);
-        trip.setStatus(Trip.TripStatus.ACTIVE);
-
-        given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
-        given(tripService.getTripByRoomCode("ABC123")).willReturn(trip);
-
-        // when
-        MockHttpServletRequestBuilder getRequest = get("/trips/room/ABC123")
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("Authorization", "Bearer 1");
-
-        // then
-        mockMvc.perform(getRequest)
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.roomCode", is("ABC123")))
-                .andExpect(jsonPath("$.name", is(trip.getName())));
-    }
-
+    
     @Test
     public void getTripsByHostId_validHostId_success() throws Exception {
         // given

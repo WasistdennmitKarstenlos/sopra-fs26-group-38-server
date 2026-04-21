@@ -153,18 +153,6 @@ public class TripServiceTest {
     }
 
     @Test
-    public void getTripByRoomCode_validCode_success() {
-        // when
-        Mockito.when(tripRepository.findByRoomCode("ABC123")).thenReturn(Optional.of(testTrip));
-
-        Trip retrievedTrip = tripService.getTripByRoomCode("ABC123");
-
-        // then
-        assertEquals("ABC123", retrievedTrip.getRoomCode());
-        assertEquals("Paris Vacation", retrievedTrip.getName());
-    }
-
-    @Test
     public void getTripByRoomCode_invalidCode_throwsException() {
         // when
         Mockito.when(tripRepository.findByRoomCode("INVALID")).thenReturn(Optional.empty());

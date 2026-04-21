@@ -80,21 +80,6 @@ public class TripController {
     }
 
     /**
-     * Get a trip by room code
-     * Used when users want to join a trip with the room code
-     * @param roomCode the unique room code
-     * @return the trip details
-     */
-    @GetMapping("/room/{roomCode}")
-    @ResponseStatus(HttpStatus.OK)
-    public TripGetDTO getTripByRoomCode(@RequestHeader(value = "Authorization", required = false) String token,
-                                        @PathVariable String roomCode) {
-        userService.validateToken(token);
-        Trip trip = tripService.getTripByRoomCode(roomCode);
-        return DTOMapper.INSTANCE.convertEntityToTripGetDTO(trip);
-    }
-
-    /**
      * Join a trip using a room code and room username.
      * Requires authentication and records membership for destination permissions.
      * @param requestDTO request body containing roomCode and roomUsername
