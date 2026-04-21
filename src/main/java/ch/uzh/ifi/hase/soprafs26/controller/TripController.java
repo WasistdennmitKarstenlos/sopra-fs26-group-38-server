@@ -17,11 +17,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.entity.TripMembership;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.InviteDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.JoinTripRequestDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.JoinTripResponseDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.TripParticipantDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
@@ -113,6 +115,44 @@ public class TripController {
         response.setRoomUsername(requestDTO.getRoomUsername());
         response.setUserId(requester.getId());
         return response;
+    }
+
+    /**
+     * Get all participants of a trip.
+     * @param tripId trip id
+     * @param token authorization header
+     * @return list of participants with display name per room
+     */
+    @GetMapping("/{tripId}/participants")
+    @ResponseStatus(HttpStatus.OK)
+    public List<TripParticipantDTO> getTripParticipants(
+            @PathVariable Long tripId,
+            @RequestHeader(value = "Authorization", required = false) String token) {
+        User requester = userService.validateToken(token);
+        Trip trip = tripService.getTripById(tripId);
+        User hostUser = userService.getUserById(trip.getHostId());
+        List<TripMembership> memberships = tripService.getTripParticipants(tripId, requester.getId());
+
+        return memberships.stream().map(membership -> {
+            TripParticipantDTO participant = new TripParticipantDTO();
+            participant.setUserId(membership.getUserId());
+            String fallbackName;
+            if (membership.getUserId().equals(trip.getHostId())) {
+                fallbackName = hostUser.getUsername();
+            }
+            else if (membership.getUserId().equals(requester.getId())) {
+                fallbackName = requester.getUsername();
+            }
+            else {
+                fallbackName = "User " + membership.getUserId();
+            }
+            participant.setRoomUsername(
+                    membership.getRoomUsername() == null || membership.getRoomUsername().trim().isEmpty()
+                            ? fallbackName
+                            : membership.getRoomUsername()
+            );
+            return participant;
+        }).collect(Collectors.toList());
     }
 
     /**

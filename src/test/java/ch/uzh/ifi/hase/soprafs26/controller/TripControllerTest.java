@@ -25,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.entity.TripMembership;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.JoinTripRequestDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
@@ -342,6 +343,63 @@ public class TripControllerTest {
 
         mockMvc.perform(postRequest)
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void getTripParticipants_validRequest_success() throws Exception {
+        given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
+                Trip trip = new Trip();
+                trip.setId(1L);
+                trip.setHostId(1L);
+                given(tripService.getTripById(1L)).willReturn(trip);
+                given(userService.getUserById(1L)).willReturn(authenticatedUser());
+        TripMembership host = new TripMembership(1L, 1L, null);
+        TripMembership guest = new TripMembership(1L, 2L, "alice");
+        given(tripService.getTripParticipants(1L, 1L)).willReturn(List.of(host, guest));
+
+        MockHttpServletRequestBuilder getRequest = get("/trips/1/participants")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer 1");
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].userId", is(1)))
+                .andExpect(jsonPath("$[0].roomUsername", is("testUser")))
+                .andExpect(jsonPath("$[1].userId", is(2)))
+                .andExpect(jsonPath("$[1].roomUsername", is("alice")));
+    }
+
+    @Test
+    public void getTripParticipants_guestRequester_stillReturnsHostUsername() throws Exception {
+        User guestRequester = new User();
+        guestRequester.setId(2L);
+        guestRequester.setUsername("guestUser");
+
+        User hostUser = new User();
+        hostUser.setId(1L);
+        hostUser.setUsername("hostUser");
+
+        Trip trip = new Trip();
+        trip.setId(1L);
+        trip.setHostId(1L);
+
+        given(userService.validateToken("Bearer 2")).willReturn(guestRequester);
+        given(tripService.getTripById(1L)).willReturn(trip);
+        given(userService.getUserById(1L)).willReturn(hostUser);
+        given(tripService.getTripParticipants(1L, 2L)).willReturn(List.of(
+                new TripMembership(1L, 1L, null),
+                new TripMembership(1L, 2L, "alice")
+        ));
+
+        MockHttpServletRequestBuilder getRequest = get("/trips/1/participants")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer 2");
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].userId", is(1)))
+                .andExpect(jsonPath("$[0].roomUsername", is("hostUser")));
     }
 
     @Test

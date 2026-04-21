@@ -1,5 +1,9 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -11,10 +15,6 @@ import org.springframework.web.server.ResponseStatusException;
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * User Service
@@ -37,6 +37,11 @@ public class UserService {
 
 	public List<User> getUsers() {
 		return this.userRepository.findAll();
+	}
+
+	public User getUserById(Long userId) {
+		return userRepository.findById(userId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 	}
 
 	/**

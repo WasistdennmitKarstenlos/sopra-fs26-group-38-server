@@ -1,6 +1,7 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -133,7 +134,7 @@ public class TripService {
     public Trip joinTripByRoomCode(String roomCode, Long userId, String roomUsername) {
         validateJoinTrip(roomCode, roomUsername);
         Trip trip = getTripByRoomCode(roomCode);
-        String normalizedRoomUsername = roomUsername.trim();
+        String normalizedRoomUsername = roomUsername.trim().toLowerCase(Locale.ROOT);
 
         if (trip.getStatus() != Trip.TripStatus.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trip is closed for joining");
@@ -143,7 +144,13 @@ public class TripService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "User is already a member of this trip");
         }
 
-        if (tripMembershipRepository.existsByTripIdAndRoomUsername(trip.getId(), normalizedRoomUsername)) {
+        boolean roomUsernameTaken = tripMembershipRepository.findByTripIdOrderByIdAsc(trip.getId()).stream()
+            .map(TripMembership::getRoomUsername)
+            .filter(username -> username != null && !username.trim().isEmpty())
+            .map(username -> username.trim().toLowerCase(Locale.ROOT))
+            .anyMatch(normalizedRoomUsername::equals);
+
+        if (roomUsernameTaken) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Room username is already taken in this trip");
         }
 
@@ -187,6 +194,18 @@ public class TripService {
         Trip trip = getTripById(tripId);
         ensureParticipant(tripId, userId);
         return trip;
+    }
+
+    /**
+     * Get all participants of a trip that the requester is part of.
+     * @param tripId target trip id
+     * @param userId authenticated user id
+     * @return participant memberships ordered by insertion
+     */
+    public List<TripMembership> getTripParticipants(Long tripId, Long userId) {
+        getTripById(tripId);
+        ensureParticipant(tripId, userId);
+        return tripMembershipRepository.findByTripIdOrderByIdAsc(tripId);
     }
 
     /**

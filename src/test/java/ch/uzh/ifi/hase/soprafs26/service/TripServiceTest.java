@@ -383,7 +383,7 @@ public class TripServiceTest {
     public void joinTripByRoomCode_validInput_success() {
         Mockito.when(tripRepository.findByRoomCode("ABC123")).thenReturn(Optional.of(testTrip));
         Mockito.when(tripMembershipRepository.existsByTripIdAndUserId(1L, 2L)).thenReturn(false);
-        Mockito.when(tripMembershipRepository.existsByTripIdAndRoomUsername(1L, "alice")).thenReturn(false);
+        Mockito.when(tripMembershipRepository.findByTripIdOrderByIdAsc(1L)).thenReturn(List.of());
 
         Trip joinedTrip = tripService.joinTripByRoomCode("ABC123", 2L, "  alice  ");
 
@@ -430,11 +430,27 @@ public class TripServiceTest {
     public void joinTripByRoomCode_duplicateRoomUsername_conflict() {
         Mockito.when(tripRepository.findByRoomCode("ABC123")).thenReturn(Optional.of(testTrip));
         Mockito.when(tripMembershipRepository.existsByTripIdAndUserId(1L, 2L)).thenReturn(false);
-        Mockito.when(tripMembershipRepository.existsByTripIdAndRoomUsername(1L, "alice")).thenReturn(true);
+        Mockito.when(tripMembershipRepository.findByTripIdOrderByIdAsc(1L))
+            .thenReturn(List.of(new TripMembership(1L, 5L, "alice")));
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
                 () -> tripService.joinTripByRoomCode("ABC123", 2L, "alice"));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+        assertTrue(exception.getReason().contains("already taken"));
+    }
+
+    @Test
+    public void joinTripByRoomCode_duplicateRoomUsername_caseInsensitive_conflict() {
+        Mockito.when(tripRepository.findByRoomCode("ABC123")).thenReturn(Optional.of(testTrip));
+        Mockito.when(tripMembershipRepository.existsByTripIdAndUserId(1L, 2L)).thenReturn(false);
+        Mockito.when(tripMembershipRepository.findByTripIdOrderByIdAsc(1L))
+                .thenReturn(List.of(new TripMembership(1L, 5L, "Leah")));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> tripService.joinTripByRoomCode("ABC123", 2L, "lEah"));
 
         assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
         assertTrue(exception.getReason().contains("already taken"));
@@ -451,5 +467,34 @@ public class TripServiceTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         assertTrue(exception.getReason().contains("closed"));
+    }
+
+    @Test
+    public void getTripParticipants_validParticipant_success() {
+        Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
+        List<TripMembership> memberships = List.of(
+                new TripMembership(1L, 1L, null),
+                new TripMembership(1L, 2L, "alice")
+        );
+        Mockito.when(tripMembershipRepository.findByTripIdOrderByIdAsc(1L)).thenReturn(memberships);
+
+        List<TripMembership> result = tripService.getTripParticipants(1L, 1L);
+
+        assertEquals(2, result.size());
+        assertEquals(2L, result.get(1).getUserId());
+        assertEquals("alice", result.get(1).getRoomUsername());
+    }
+
+    @Test
+    public void getTripParticipants_nonParticipant_forbidden() {
+        Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
+        Mockito.when(tripMembershipRepository.existsByTripIdAndUserId(1L, 99L)).thenReturn(false);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> tripService.getTripParticipants(1L, 99L)
+        );
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
     }
 }
