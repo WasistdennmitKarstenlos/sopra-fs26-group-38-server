@@ -13,9 +13,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tools.jackson.databind.ObjectMapper;
 
@@ -106,6 +108,64 @@ public class DestinationControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(11))
                 .andExpect(jsonPath("$.destinationName").value("Zurich"));
+    }
+
+    @Test
+    public void createDestination_nonParticipant_forbidden() throws Exception {
+        User user = new User();
+        user.setId(99L);
+
+        DestinationPostDTO postDTO = new DestinationPostDTO();
+        postDTO.setDestinationName("Bern");
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.when(tripService.addDestination(Mockito.eq(1L), Mockito.eq(99L), Mockito.any(Destination.class)))
+                .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not a participant of this trip"));
+
+        mockMvc.perform(post("/trips/1/destinations")
+                        .header("Authorization", "Bearer token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(postDTO)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    public void createDestination_emptyName_badRequest() throws Exception {
+        User user = new User();
+        user.setId(1L);
+
+        DestinationPostDTO postDTO = new DestinationPostDTO();
+        postDTO.setDestinationName("   ");
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.when(tripService.addDestination(Mockito.eq(1L), Mockito.eq(1L), Mockito.any(Destination.class)))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Destination name cannot be empty"));
+
+        mockMvc.perform(post("/trips/1/destinations")
+                        .header("Authorization", "Bearer token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(postDTO)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void createDestination_inactiveTrip_badRequest() throws Exception {
+        User user = new User();
+        user.setId(1L);
+
+        DestinationPostDTO postDTO = new DestinationPostDTO();
+        postDTO.setDestinationName("Basel");
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.when(tripService.addDestination(Mockito.eq(1L), Mockito.eq(1L), Mockito.any(Destination.class)))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Trip is in read-only mode. Mutations are only allowed while trip is ACTIVE"));
+
+        mockMvc.perform(post("/trips/1/destinations")
+                        .header("Authorization", "Bearer token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(postDTO)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
