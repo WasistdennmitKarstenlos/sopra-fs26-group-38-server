@@ -216,6 +216,37 @@ public class TripControllerTest {
     }
 
     @Test
+    public void createTrip_withImageBase64_returnsImageInResponse() throws Exception {
+        TripPostDTO tripPostDTO = new TripPostDTO();
+        tripPostDTO.setName("Beach Trip");
+        tripPostDTO.setImageBase64("data:image/jpeg;base64,/9j/abc123");
+
+        User authenticatedUser = new User();
+        authenticatedUser.setId(1L);
+
+        Trip trip = new Trip();
+        trip.setId(2L);
+        trip.setName("Beach Trip");
+        trip.setRoomCode("XYZ789");
+        trip.setHostId(1L);
+        trip.setStatus(Trip.TripStatus.ACTIVE);
+        trip.setCreationDate(new Date());
+        trip.setImageBase64("data:image/jpeg;base64,/9j/abc123");
+
+        given(userService.validateToken("Bearer test-token")).willReturn(authenticatedUser);
+        given(tripService.createTrip(Mockito.any())).willReturn(trip);
+
+        MockHttpServletRequestBuilder postRequest = post("/trips")
+                .header("Authorization", "Bearer test-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(tripPostDTO));
+
+        mockMvc.perform(postRequest)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.imageBase64", is("data:image/jpeg;base64,/9j/abc123")));
+    }
+
+    @Test
     public void updateTripStatus_validInput_success() throws Exception {
         // given
         Trip trip = new Trip();
