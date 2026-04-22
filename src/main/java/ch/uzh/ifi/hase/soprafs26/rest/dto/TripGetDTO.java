@@ -17,13 +17,18 @@ public class TripGetDTO implements Serializable {
     private Date creationDate;
     private String status; // String representation of Trip.TripStatus
     private Long finalDestinationId;
+    private boolean evaluationMode;
+    private boolean finalized;
+    private boolean isHost;
+    private boolean canEnterFinalEvaluation;
 
     // Constructors
     public TripGetDTO() {
     }
 
-    public TripGetDTO(Long id, String name, String roomCode, Long hostId, Date creationDate, 
-                      String status, Long finalDestinationId) {
+    public TripGetDTO(Long id, String name, String roomCode, Long hostId, Date creationDate,
+                      String status, Long finalDestinationId,
+                      boolean evaluationMode, boolean finalized, boolean isHost, boolean canEnterFinalEvaluation) {
         this.id = id;
         this.name = name;
         this.roomCode = roomCode;
@@ -31,6 +36,10 @@ public class TripGetDTO implements Serializable {
         this.creationDate = creationDate;
         this.status = status;
         this.finalDestinationId = finalDestinationId;
+        this.evaluationMode = evaluationMode;
+        this.finalized = finalized;
+        this.isHost = isHost;
+        this.canEnterFinalEvaluation = canEnterFinalEvaluation;
     }
 
     // Getters and Setters
@@ -88,5 +97,37 @@ public class TripGetDTO implements Serializable {
 
     public void setFinalDestinationId(Long finalDestinationId) {
         this.finalDestinationId = finalDestinationId;
+    }
+
+    public boolean isEvaluationMode() {
+        return evaluationMode;
+    }
+
+    public void setEvaluationMode(boolean evaluationMode) {
+        this.evaluationMode = evaluationMode;
+    }
+
+    public boolean isFinalized() {
+        return finalized;
+    }
+
+    public void setFinalized(boolean finalized) {
+        this.finalized = finalized;
+    }
+
+    public boolean isHost() {
+        return isHost;
+    }
+
+    public void setHost(boolean host) {
+        isHost = host;
+    }
+
+    public boolean isCanEnterFinalEvaluation() {
+        return canEnterFinalEvaluation;
+    }
+
+    public void setCanEnterFinalEvaluation(boolean canEnterFinalEvaluation) {
+        this.canEnterFinalEvaluation = canEnterFinalEvaluation;
     }
 }

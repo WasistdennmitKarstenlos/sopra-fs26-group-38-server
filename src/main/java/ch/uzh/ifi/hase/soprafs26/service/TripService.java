@@ -278,6 +278,26 @@ public class TripService {
     }
 
     /**
+     * Returns whether the caller may enter final evaluation right now.
+     * This is intended for UI state in trip responses.
+     * @param trip trip entity
+     * @param actorUserId authenticated caller id
+     * @return true if final evaluation can be entered
+     */
+    public boolean canEnterFinalEvaluation(Trip trip, Long actorUserId) {
+        if (trip == null || actorUserId == null) {
+            return false;
+        }
+        if (!trip.getHostId().equals(actorUserId)) {
+            return false;
+        }
+        if (trip.getStatus() == Trip.TripStatus.EVALUATION || trip.getStatus() == Trip.TripStatus.FINALIZED) {
+            return false;
+        }
+        return destinationRepository.existsByTripId(trip.getId());
+    }
+
+    /**
      * Set the final destination for a trip
      * @param tripId the ID of the trip
      * @param finalDestinationId the ID of the destination selected as final

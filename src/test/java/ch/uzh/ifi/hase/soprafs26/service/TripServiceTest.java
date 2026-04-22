@@ -262,6 +262,33 @@ public class TripServiceTest {
     }
 
     @Test
+    public void canEnterFinalEvaluation_hostWithDestination_true() {
+        Mockito.when(destinationRepository.existsByTripId(1L)).thenReturn(true);
+
+        boolean result = tripService.canEnterFinalEvaluation(testTrip, 1L);
+
+        assertTrue(result);
+    }
+
+    @Test
+    public void canEnterFinalEvaluation_nonHost_false() {
+        Mockito.when(destinationRepository.existsByTripId(1L)).thenReturn(true);
+
+        boolean result = tripService.canEnterFinalEvaluation(testTrip, 99L);
+
+        assertEquals(false, result);
+    }
+
+    @Test
+    public void canEnterFinalEvaluation_noDestination_false() {
+        Mockito.when(destinationRepository.existsByTripId(1L)).thenReturn(false);
+
+        boolean result = tripService.canEnterFinalEvaluation(testTrip, 1L);
+
+        assertEquals(false, result);
+    }
+
+    @Test
     public void setFinalDestination_validInput_success() {
         // given
         Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));

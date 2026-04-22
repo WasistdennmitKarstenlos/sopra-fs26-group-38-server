@@ -107,6 +107,7 @@ public class TripControllerTest {
 
         given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
         given(tripService.getTripById(1L)).willReturn(trip);
+        given(tripService.canEnterFinalEvaluation(trip, 1L)).willReturn(true);
 
         // when
         MockHttpServletRequestBuilder getRequest = get("/trips/1")
@@ -118,7 +119,11 @@ public class TripControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(Math.toIntExact(trip.getId()))))
                 .andExpect(jsonPath("$.name", is(trip.getName())))
-                .andExpect(jsonPath("$.roomCode", is(trip.getRoomCode())));
+                .andExpect(jsonPath("$.roomCode", is(trip.getRoomCode())))
+                .andExpect(jsonPath("$.host", is(true)))
+                .andExpect(jsonPath("$.evaluationMode", is(false)))
+                .andExpect(jsonPath("$.finalized", is(false)))
+                .andExpect(jsonPath("$.canEnterFinalEvaluation", is(true)));
     }
 
     @Test
@@ -227,6 +232,7 @@ public class TripControllerTest {
 
         given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
         given(tripService.enterFinalEvaluation(1L, 1L)).willReturn(trip);
+        given(tripService.canEnterFinalEvaluation(trip, 1L)).willReturn(false);
 
         // when
         MockHttpServletRequestBuilder putRequest = put("/trips/1/status")
@@ -287,7 +293,9 @@ public class TripControllerTest {
 
         mockMvc.perform(postRequest)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status", is("EVALUATION")));
+                .andExpect(jsonPath("$.status", is("EVALUATION")))
+                .andExpect(jsonPath("$.evaluationMode", is(true)))
+                .andExpect(jsonPath("$.canEnterFinalEvaluation", is(false)));
     }
 
     @Test
