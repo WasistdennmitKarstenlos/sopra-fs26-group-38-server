@@ -270,6 +270,44 @@ public class TripControllerTest {
     }
 
     @Test
+    public void enterFinalEvaluation_validInput_success() throws Exception {
+        Trip trip = new Trip();
+        trip.setId(1L);
+        trip.setName("Paris Vacation");
+        trip.setRoomCode("ABC123");
+        trip.setHostId(1L);
+        trip.setStatus(Trip.TripStatus.EVALUATION);
+
+        given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
+        given(tripService.enterFinalEvaluation(1L, 1L)).willReturn(trip);
+
+        MockHttpServletRequestBuilder postRequest = post("/trips/1/final-evaluation")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer 1");
+
+        mockMvc.perform(postRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status", is("EVALUATION")));
+    }
+
+    @Test
+    public void enterFinalEvaluation_nonHost_forbidden() throws Exception {
+        User nonHost = new User();
+        nonHost.setId(2L);
+
+        given(userService.validateToken("Bearer valid-token")).willReturn(nonHost);
+        given(tripService.enterFinalEvaluation(1L, 2L))
+                .willThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can enter final evaluation mode"));
+
+        MockHttpServletRequestBuilder postRequest = post("/trips/1/final-evaluation")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer valid-token");
+
+        mockMvc.perform(postRequest)
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     public void setFinalDestination_validInput_success() throws Exception {
         // given
         Trip trip = new Trip();

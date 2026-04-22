@@ -162,7 +162,7 @@ public class TripService {
         Trip trip = getTripById(tripId);
         validateDestinationInput(destination);
         ensureParticipant(tripId, userId);
-        ensureTripIsActiveForMutations(trip);
+        ensureTripIsWritable(trip);
 
         destination.setTripId(tripId);
         destination.setProposedByUserId(userId);
@@ -253,12 +253,7 @@ public class TripService {
      * @param trip trip entity
      */
     public void ensureTripIsActiveForMutations(Trip trip) {
-        if (trip.getStatus() != Trip.TripStatus.ACTIVE) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Trip is in read-only mode. Mutations are only allowed while trip is ACTIVE"
-            );
-        }
+        ensureTripIsWritable(trip);
     }
 
     /**
@@ -267,6 +262,19 @@ public class TripService {
      */
     public void ensureTripIsActiveForMutations(Long tripId) {
         ensureTripIsActiveForMutations(getTripById(tripId));
+    }
+
+    /**
+     * Shared participant + writable guard for mutation paths.
+     * @param tripId target trip id
+     * @param userId authenticated user id
+     * @return loaded trip entity
+     */
+    public Trip ensureTripWritableForParticipant(Long tripId, Long userId) {
+        Trip trip = getTripById(tripId);
+        ensureParticipant(tripId, userId);
+        ensureTripIsWritable(trip);
+        return trip;
     }
 
     /**
@@ -383,6 +391,15 @@ public class TripService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Destination name cannot be empty");
         }
         destination.setDestinationName(destination.getDestinationName().trim());
+    }
+
+    private void ensureTripIsWritable(Trip trip) {
+        if (trip.getStatus() != Trip.TripStatus.ACTIVE) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Trip is in read-only mode. Mutations are only allowed while trip is ACTIVE"
+            );
+        }
     }
 
 }
