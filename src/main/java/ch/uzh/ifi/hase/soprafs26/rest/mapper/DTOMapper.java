@@ -62,6 +62,7 @@ public interface DTOMapper {
 	@Mapping(target = "status", ignore = true)
 	@Mapping(target = "finalDestinationId", ignore = true)
 	@Mapping(source = "name", target = "name")
+	@Mapping(source = "imageBase64", target = "imageBase64")
 	Trip convertTripPostDTOtoEntity(TripPostDTO tripPostDTO);
 
 	@Mapping(source = "id", target = "id")
@@ -71,6 +72,7 @@ public interface DTOMapper {
 	@Mapping(source = "creationDate", target = "creationDate")
 	@Mapping(source = "status", target = "status", qualifiedByName = "tripStatusToString")
 	@Mapping(source = "finalDestinationId", target = "finalDestinationId")
+	@Mapping(source = "imageBase64", target = "imageBase64")
 	TripGetDTO convertEntityToTripGetDTO(Trip trip);
 
 	@Named("tripStatusToString")

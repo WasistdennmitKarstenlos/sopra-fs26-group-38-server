@@ -17,6 +17,7 @@ public class TripGetDTO implements Serializable {
     private Date creationDate;
     private String status; // String representation of Trip.TripStatus
     private Long finalDestinationId;
+    private String imageBase64;
 
     // Constructors
     public TripGetDTO() {
@@ -88,5 +89,13 @@ public class TripGetDTO implements Serializable {
 
     public void setFinalDestinationId(Long finalDestinationId) {
         this.finalDestinationId = finalDestinationId;
+    }
+
+    public String getImageBase64() {
+        return imageBase64;
+    }
+
+    public void setImageBase64(String imageBase64) {
+        this.imageBase64 = imageBase64;
     }
 }
