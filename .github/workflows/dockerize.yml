@@ -14,6 +14,9 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # auto-generated
       DOCKER_BUILDKIT: 1
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME || secrets.dockerhub_username }}
+      DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD || secrets.dockerhub_password }}
+      DOCKERHUB_REPO: ${{ secrets.DOCKERHUB_REPO_NAME || secrets.dockerhub_repo_name }}
       
     steps:
     # checkout repository code
@@ -23,13 +26,14 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    # docker login only for main branch pushes
+    # docker login only for main branch pushes when registry credentials are configured
     - name: Login to Docker Hub
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      id: docker-login
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_PASSWORD != '' && env.DOCKERHUB_REPO != ''
       uses: docker/login-action@v3
       with:
-        username: ${{ secrets.dockerhub_username }}
-        password: ${{ secrets.dockerhub_password }}
+        username: ${{ env.DOCKERHUB_USERNAME }}
+        password: ${{ env.DOCKERHUB_PASSWORD }}
 
     # PRs: build image only (no push), so CI validates Dockerfile without registry credentials.
     - name: Build for PR validation (no push)
@@ -41,15 +45,33 @@ jobs:
         push: false
         platforms: linux/amd64
 
-    # Main branch pushes: build and publish Docker image.
-    - name: Build and push image on main
+    # Main branch pushes: always validate Dockerfile by building the image.
+    - name: Build on main (no push)
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: docker/build-push-action@v5
       with:
         context: .
         file: ./Dockerfile
-        push: true
-        tags: ${{secrets.dockerhub_username}}/${{secrets.dockerhub_repo_name}}:latest
+        push: false
         platforms: linux/amd64
-        cache-from: type=registry,ref=${{secrets.dockerhub_username}}/${{secrets.dockerhub_repo_name}}:cache
         cache-to: type=inline,mode=max
+
+    # Main branch pushes: attempt to publish Docker image, but do not fail CI if registry permissions are missing.
+    - name: Build and push image on main
+      id: docker-push
+      continue-on-error: true
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.docker-login.outcome == 'success'
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: ${{ env.DOCKERHUB_USERNAME }}/${{ env.DOCKERHUB_REPO }}:latest
+        platforms: linux/amd64
+        cache-to: type=inline,mode=max
+
+    # Keep CI green for code validation while still surfacing Docker Hub permission issues.
+    - name: Warn when Docker push fails
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.docker-login.outcome == 'success' && steps.docker-push.outcome == 'failure'
+      run: |
+        echo "::warning::Docker image push failed due to registry permissions or repository configuration. Docker build validation still succeeded."
