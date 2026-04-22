@@ -226,8 +226,7 @@ public class TripControllerTest {
         trip.setStatus(Trip.TripStatus.EVALUATION);
 
         given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
-        given(tripService.getTripById(1L)).willReturn(trip);
-        given(tripService.updateTripStatus(1L, Trip.TripStatus.EVALUATION)).willReturn(trip);
+        given(tripService.enterFinalEvaluation(1L, 1L)).willReturn(trip);
 
         // when
         MockHttpServletRequestBuilder putRequest = put("/trips/1/status")
@@ -256,7 +255,8 @@ public class TripControllerTest {
         trip.setStatus(Trip.TripStatus.ACTIVE);
 
         given(userService.validateToken("Bearer valid-token")).willReturn(nonHost);
-        given(tripService.getTripById(1L)).willReturn(trip);
+        given(tripService.enterFinalEvaluation(1L, 2L))
+                .willThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can enter final evaluation mode"));
 
         // when
         MockHttpServletRequestBuilder putRequest = put("/trips/1/status")

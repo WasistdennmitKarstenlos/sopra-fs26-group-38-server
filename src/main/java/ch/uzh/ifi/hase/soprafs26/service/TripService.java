@@ -198,14 +198,52 @@ public class TripService {
      */
     public Trip updateTripStatus(Long tripId, Trip.TripStatus newStatus) {
         log.debug("Updating trip {} status to: {}", tripId, newStatus);
+        if (newStatus != Trip.TripStatus.EVALUATION) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Only transition to EVALUATION is supported via this endpoint"
+            );
+        }
 
         Trip trip = getTripById(tripId);
-        validateEvaluationTransition(trip, newStatus);
-        trip.setStatus(newStatus);
+        return enterFinalEvaluation(tripId, trip.getHostId());
+    }
 
+    /**
+     * Enter final evaluation mode for a trip.
+     * This transition is host-only and allowed only if the trip has at least one destination,
+     * is not already in EVALUATION, and is not FINALIZED.
+     * @param tripId target trip id
+     * @param actorUserId authenticated caller id
+     * @return updated trip in EVALUATION mode
+     */
+    public Trip enterFinalEvaluation(Long tripId, Long actorUserId) {
+        log.debug("User {} requested final evaluation for trip {}", actorUserId, tripId);
+
+        Trip trip = getTripById(tripId);
+
+        if (!trip.getHostId().equals(actorUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can enter final evaluation mode");
+        }
+
+        if (!destinationRepository.existsByTripId(tripId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "At least one destination is required before entering EVALUATION"
+            );
+        }
+
+        if (trip.getStatus() == Trip.TripStatus.EVALUATION) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Trip is already in EVALUATION mode");
+        }
+
+        if (trip.getStatus() == Trip.TripStatus.FINALIZED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Trip is FINALIZED and cannot enter EVALUATION");
+        }
+
+        trip.setStatus(Trip.TripStatus.EVALUATION);
         Trip updatedTrip = tripRepository.save(trip);
-        log.info("Trip {} status updated to: {}", tripId, newStatus);
-
+        log.info("Trip {} entered EVALUATION mode", tripId);
         return updatedTrip;
     }
 
@@ -347,30 +385,4 @@ public class TripService {
         destination.setDestinationName(destination.getDestinationName().trim());
     }
 
-    /**
-     * Validates whether the requested status transition is allowed for entering evaluation mode.
-     */
-    private void validateEvaluationTransition(Trip trip, Trip.TripStatus newStatus) {
-        if (newStatus != Trip.TripStatus.EVALUATION) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Only transition to EVALUATION is supported via this endpoint"
-            );
-        }
-
-        if (trip.getStatus() == Trip.TripStatus.EVALUATION) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Trip is already in EVALUATION mode");
-        }
-
-        if (trip.getStatus() == Trip.TripStatus.FINALIZED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Trip is FINALIZED and cannot enter EVALUATION");
-        }
-
-        if (destinationRepository.findByTripIdOrderByIdDesc(trip.getId()).isEmpty()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "At least one destination is required before entering EVALUATION"
-            );
-        }
-    }
 }

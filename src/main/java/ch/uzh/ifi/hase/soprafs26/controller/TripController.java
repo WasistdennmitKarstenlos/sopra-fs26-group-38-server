@@ -195,15 +195,30 @@ public class TripController {
                                        @RequestParam Trip.TripStatus newStatus) {
         User authenticatedUser = userService.validateToken(token);
 
-        Trip trip = tripService.getTripById(tripId);
-        if (!trip.getHostId().equals(authenticatedUser.getId())) {
+        if (newStatus != Trip.TripStatus.EVALUATION) {
             throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Only the host can update this trip's status"
+                    HttpStatus.BAD_REQUEST,
+                    "Only transition to EVALUATION is supported via this endpoint"
             );
         }
 
-        Trip updatedTrip = tripService.updateTripStatus(tripId, newStatus);
+        Trip updatedTrip = tripService.enterFinalEvaluation(tripId, authenticatedUser.getId());
+        return DTOMapper.INSTANCE.convertEntityToTripGetDTO(updatedTrip);
+    }
+
+    /**
+     * Enter final evaluation mode.
+     * Dedicated endpoint for host action "Final Evaluation".
+     * @param tripId the ID of the trip
+     * @param token Authorization header containing Bearer token
+     * @return the updated trip in EVALUATION status
+     */
+    @PostMapping("/{tripId}/final-evaluation")
+    @ResponseStatus(HttpStatus.OK)
+    public TripGetDTO enterFinalEvaluation(@RequestHeader(value = "Authorization", required = false) String token,
+                                           @PathVariable Long tripId) {
+        User authenticatedUser = userService.validateToken(token);
+        Trip updatedTrip = tripService.enterFinalEvaluation(tripId, authenticatedUser.getId());
         return DTOMapper.INSTANCE.convertEntityToTripGetDTO(updatedTrip);
     }
 
