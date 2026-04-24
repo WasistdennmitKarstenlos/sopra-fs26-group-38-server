@@ -24,6 +24,7 @@ import ch.uzh.ifi.hase.soprafs26.entity.TripMembership;
 import ch.uzh.ifi.hase.soprafs26.repository.DestinationRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.TripMembershipRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.TripRepository;
+import org.springframework.context.ApplicationEventPublisher;
 
 /**
  * TripServiceTest
@@ -39,6 +40,9 @@ public class TripServiceTest {
 
     @Mock
     private TripMembershipRepository tripMembershipRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
 
     @InjectMocks
