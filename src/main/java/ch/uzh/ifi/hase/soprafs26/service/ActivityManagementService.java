@@ -1,7 +1,6 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Activity;
-import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.entity.Vote;
 import ch.uzh.ifi.hase.soprafs26.entity.VoteType;
 import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
@@ -9,6 +8,8 @@ import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteRequestDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteResponseDTO;
+import ch.uzh.ifi.hase.soprafs26.event.DestinationVotesUpdatedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,15 +26,18 @@ public class ActivityManagementService {
     private final DestinationService destinationService;
     private final TripService tripService;
     private final VoteRepository voteRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ActivityManagementService(ActivityRepository activityRepository,
                                      DestinationService destinationService,
                                      TripService tripService,
-                                     VoteRepository voteRepository) {
+                                     VoteRepository voteRepository,
+                                     ApplicationEventPublisher eventPublisher) {
         this.activityRepository = activityRepository;
         this.destinationService = destinationService;
         this.tripService = tripService;
         this.voteRepository = voteRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     public List<Activity> getSelectedActivities(Long tripId, Long destinationId) {
@@ -43,7 +47,7 @@ public class ActivityManagementService {
                 .toList();
     }
 
-    public Activity addActivity(Long tripId, Long destinationId, Activity activityInput) {
+    public Activity addActivity(Long tripId, Long destinationId, Long userId, Activity activityInput) {
         tripService.ensureTripIsActiveForMutations(tripId);
         destinationService.getDestinationEntity(tripId, destinationId);
         validateActivity(activityInput);
@@ -63,10 +67,12 @@ public class ActivityManagementService {
         activity.setLatitude(activityInput.getLatitude());
         activity.setLongitude(activityInput.getLongitude());
 
-        return activityRepository.save(activity);
+        Activity saved = activityRepository.save(activity);
+        eventPublisher.publishEvent(new DestinationVotesUpdatedEvent(this, tripId, userId));
+        return saved;
     }
 
-    public Activity updateActivity(Long tripId, Long destinationId, Long activityId, Activity activityUpdate) {
+    public Activity updateActivity(Long tripId, Long destinationId, Long activityId, Long userId, Activity activityUpdate) {
         tripService.ensureTripIsActiveForMutations(tripId);
         destinationService.getDestinationEntity(tripId, destinationId);
         validateActivity(activityUpdate);
@@ -82,10 +88,12 @@ public class ActivityManagementService {
         activity.setLatitude(activityUpdate.getLatitude());
         activity.setLongitude(activityUpdate.getLongitude());
 
-        return activityRepository.save(activity);
+        Activity saved = activityRepository.save(activity);
+        eventPublisher.publishEvent(new DestinationVotesUpdatedEvent(this, tripId, userId));
+        return saved;
     }
 
-    public void deleteActivity(Long tripId, Long destinationId, Long activityId) {
+    public void deleteActivity(Long tripId, Long destinationId, Long activityId, Long userId) {
         tripService.ensureTripIsActiveForMutations(tripId);
         destinationService.getDestinationEntity(tripId, destinationId);
 
@@ -93,6 +101,7 @@ public class ActivityManagementService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Activity not found"));
 
         activityRepository.delete(activity);
+        eventPublisher.publishEvent(new DestinationVotesUpdatedEvent(this, tripId, userId));
     }
 
     // Voting on an activity: users can upvote, downvote, or remove their vote. Each user can only have one vote per activity.
@@ -116,11 +125,8 @@ public class ActivityManagementService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid vote type. Use UP or DOWN.");
         }
 
-        // Ensure the trip is active and the user is a participant before allowing voting
-        Trip trip = tripService.getTripForParticipant(tripId, userId);
-        if (trip.getStatus() != Trip.TripStatus.ACTIVE) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Voting is only allowed while the trip is ACTIVE");
-        }
+        // Ensure the user is a participant and the trip is writable before allowing voting.
+        tripService.ensureTripWritableForParticipant(tripId, userId);
 
         destinationService.getDestinationEntity(tripId, destinationId);
 
@@ -141,6 +147,8 @@ public class ActivityManagementService {
                 voteRepository.save(vote);
             }
         }
+
+        eventPublisher.publishEvent(new DestinationVotesUpdatedEvent(this, tripId, userId));
 
         return buildVoteResponse(activity.getId(), userId);
     }

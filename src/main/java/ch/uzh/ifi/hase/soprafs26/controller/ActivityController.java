@@ -63,10 +63,9 @@ public class ActivityController {
                                                @PathVariable("destinationId") Long destinationId,
                                                @RequestBody ActivityPostDTO activityPostDTO,
                                                @RequestHeader(value = "Authorization", required = false) String token) {
-        userService.validateToken(token);
-        Activity activity = toActivityEntity(activityPostDTO);
-        Activity saved = activityManagementService.addActivity(tripId, destinationId, activity);
         User authenticatedUser = userService.validateToken(token);
+        Activity activity = toActivityEntity(activityPostDTO);
+        Activity saved = activityManagementService.addActivity(tripId, destinationId, authenticatedUser.getId(), activity);
         return toSearchResultDTO(saved, authenticatedUser.getId(), activityManagementService);
     }
 
@@ -77,10 +76,9 @@ public class ActivityController {
                                                   @PathVariable("activityId") Long activityId,
                                                   @RequestBody ActivityPostDTO activityPostDTO,
                                                   @RequestHeader(value = "Authorization", required = false) String token) {
-        userService.validateToken(token);
-        Activity update = toActivityEntity(activityPostDTO);
-        Activity saved = activityManagementService.updateActivity(tripId, destinationId, activityId, update);
         User authenticatedUser = userService.validateToken(token);
+        Activity update = toActivityEntity(activityPostDTO);
+        Activity saved = activityManagementService.updateActivity(tripId, destinationId, activityId, authenticatedUser.getId(), update);
         return toSearchResultDTO(saved, authenticatedUser.getId(), activityManagementService);
     }
 
@@ -99,8 +97,8 @@ public class ActivityController {
                                @PathVariable("destinationId") Long destinationId,
                                @PathVariable("activityId") Long activityId,
                                @RequestHeader(value = "Authorization", required = false) String token) {
-        userService.validateToken(token);
-        activityManagementService.deleteActivity(tripId, destinationId, activityId);
+        User requester = userService.validateToken(token);
+        activityManagementService.deleteActivity(tripId, destinationId, activityId, requester.getId());
     }
 
     @GetMapping("/activities/search")

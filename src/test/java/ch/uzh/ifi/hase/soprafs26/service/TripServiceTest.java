@@ -186,11 +186,7 @@ public class TripServiceTest {
     public void updateTripStatus_validInput_success() {
         // given
         Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
-        Destination existingDestination = new Destination();
-        existingDestination.setId(10L);
-        existingDestination.setTripId(1L);
-        existingDestination.setDestinationName("Zurich");
-        Mockito.when(destinationRepository.findByTripIdOrderByIdDesc(1L)).thenReturn(List.of(existingDestination));
+        Mockito.when(destinationRepository.existsByTripId(1L)).thenReturn(true);
 
         // when
         Trip updatedTrip = tripService.updateTripStatus(1L, Trip.TripStatus.EVALUATION);
@@ -203,7 +199,7 @@ public class TripServiceTest {
     @Test
     public void updateTripStatus_noDestinations_badRequest() {
         Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
-        Mockito.when(destinationRepository.findByTripIdOrderByIdDesc(1L)).thenReturn(List.of());
+        Mockito.when(destinationRepository.existsByTripId(1L)).thenReturn(false);
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
@@ -217,6 +213,7 @@ public class TripServiceTest {
     public void updateTripStatus_alreadyEvaluation_conflict() {
         testTrip.setStatus(Trip.TripStatus.EVALUATION);
         Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
+        Mockito.when(destinationRepository.existsByTripId(1L)).thenReturn(true);
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
@@ -230,6 +227,7 @@ public class TripServiceTest {
     public void updateTripStatus_finalized_conflict() {
         testTrip.setStatus(Trip.TripStatus.FINALIZED);
         Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
+        Mockito.when(destinationRepository.existsByTripId(1L)).thenReturn(true);
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
@@ -237,6 +235,45 @@ public class TripServiceTest {
         );
 
         assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+    }
+
+    @Test
+    public void enterFinalEvaluation_nonHost_forbidden() {
+        Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> tripService.enterFinalEvaluation(1L, 99L)
+        );
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+    }
+
+    @Test
+    public void canEnterFinalEvaluation_hostWithDestination_true() {
+        Mockito.when(destinationRepository.existsByTripId(1L)).thenReturn(true);
+
+        boolean result = tripService.canEnterFinalEvaluation(testTrip, 1L);
+
+        assertTrue(result);
+    }
+
+    @Test
+    public void canEnterFinalEvaluation_nonHost_false() {
+        Mockito.when(destinationRepository.existsByTripId(1L)).thenReturn(true);
+
+        boolean result = tripService.canEnterFinalEvaluation(testTrip, 99L);
+
+        assertEquals(false, result);
+    }
+
+    @Test
+    public void canEnterFinalEvaluation_noDestination_false() {
+        Mockito.when(destinationRepository.existsByTripId(1L)).thenReturn(false);
+
+        boolean result = tripService.canEnterFinalEvaluation(testTrip, 1L);
+
+        assertEquals(false, result);
     }
 
     @Test

@@ -169,7 +169,7 @@ public class TripService {
         Trip trip = getTripById(tripId);
         validateDestinationInput(destination);
         ensureParticipant(tripId, userId);
-        ensureTripIsActiveForMutations(trip);
+        ensureTripIsWritable(trip);
 
         destination.setTripId(tripId);
         destination.setProposedByUserId(userId);
@@ -217,14 +217,52 @@ public class TripService {
      */
     public Trip updateTripStatus(Long tripId, Trip.TripStatus newStatus) {
         log.debug("Updating trip {} status to: {}", tripId, newStatus);
+        if (newStatus != Trip.TripStatus.EVALUATION) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Only transition to EVALUATION is supported via this endpoint"
+            );
+        }
 
         Trip trip = getTripById(tripId);
-        validateEvaluationTransition(trip, newStatus);
-        trip.setStatus(newStatus);
+        return enterFinalEvaluation(tripId, trip.getHostId());
+    }
 
+    /**
+     * Enter final evaluation mode for a trip.
+     * This transition is host-only and allowed only if the trip has at least one destination,
+     * is not already in EVALUATION, and is not FINALIZED.
+     * @param tripId target trip id
+     * @param actorUserId authenticated caller id
+     * @return updated trip in EVALUATION mode
+     */
+    public Trip enterFinalEvaluation(Long tripId, Long actorUserId) {
+        log.debug("User {} requested final evaluation for trip {}", actorUserId, tripId);
+
+        Trip trip = getTripById(tripId);
+
+        if (!trip.getHostId().equals(actorUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can enter final evaluation mode");
+        }
+
+        if (!destinationRepository.existsByTripId(tripId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "At least one destination is required before entering EVALUATION"
+            );
+        }
+
+        if (trip.getStatus() == Trip.TripStatus.EVALUATION) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Trip is already in EVALUATION mode");
+        }
+
+        if (trip.getStatus() == Trip.TripStatus.FINALIZED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Trip is FINALIZED and cannot enter EVALUATION");
+        }
+
+        trip.setStatus(Trip.TripStatus.EVALUATION);
         Trip updatedTrip = tripRepository.save(trip);
-        log.info("Trip {} status updated to: {}", tripId, newStatus);
-
+        log.info("Trip {} entered EVALUATION mode", tripId);
         return updatedTrip;
     }
 
@@ -234,12 +272,7 @@ public class TripService {
      * @param trip trip entity
      */
     public void ensureTripIsActiveForMutations(Trip trip) {
-        if (trip.getStatus() != Trip.TripStatus.ACTIVE) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Trip is in read-only mode. Mutations are only allowed while trip is ACTIVE"
-            );
-        }
+        ensureTripIsWritable(trip);
     }
 
     /**
@@ -248,6 +281,39 @@ public class TripService {
      */
     public void ensureTripIsActiveForMutations(Long tripId) {
         ensureTripIsActiveForMutations(getTripById(tripId));
+    }
+
+    /**
+     * Shared participant + writable guard for mutation paths.
+     * @param tripId target trip id
+     * @param userId authenticated user id
+     * @return loaded trip entity
+     */
+    public Trip ensureTripWritableForParticipant(Long tripId, Long userId) {
+        Trip trip = getTripById(tripId);
+        ensureParticipant(tripId, userId);
+        ensureTripIsWritable(trip);
+        return trip;
+    }
+
+    /**
+     * Returns whether the caller may enter final evaluation right now.
+     * This is intended for UI state in trip responses.
+     * @param trip trip entity
+     * @param actorUserId authenticated caller id
+     * @return true if final evaluation can be entered
+     */
+    public boolean canEnterFinalEvaluation(Trip trip, Long actorUserId) {
+        if (trip == null || actorUserId == null) {
+            return false;
+        }
+        if (!trip.getHostId().equals(actorUserId)) {
+            return false;
+        }
+        if (trip.getStatus() == Trip.TripStatus.EVALUATION || trip.getStatus() == Trip.TripStatus.FINALIZED) {
+            return false;
+        }
+        return destinationRepository.existsByTripId(trip.getId());
     }
 
     /**
@@ -366,30 +432,13 @@ public class TripService {
         destination.setDestinationName(destination.getDestinationName().trim());
     }
 
-    /**
-     * Validates whether the requested status transition is allowed for entering evaluation mode.
-     */
-    private void validateEvaluationTransition(Trip trip, Trip.TripStatus newStatus) {
-        if (newStatus != Trip.TripStatus.EVALUATION) {
+    private void ensureTripIsWritable(Trip trip) {
+        if (trip.getStatus() != Trip.TripStatus.ACTIVE) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Only transition to EVALUATION is supported via this endpoint"
-            );
-        }
-
-        if (trip.getStatus() == Trip.TripStatus.EVALUATION) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Trip is already in EVALUATION mode");
-        }
-
-        if (trip.getStatus() == Trip.TripStatus.FINALIZED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Trip is FINALIZED and cannot enter EVALUATION");
-        }
-
-        if (destinationRepository.findByTripIdOrderByIdDesc(trip.getId()).isEmpty()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "At least one destination is required before entering EVALUATION"
+                    "Trip is in read-only mode. Mutations are only allowed while trip is ACTIVE"
             );
         }
     }
+
 }

@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.springframework.context.ApplicationEventPublisher;
+
 /**
  * Integration tests for activity voting functionality.
  * Tests cover: successful voting, vote changes (toggle), unauthorized access, unknown activity.
@@ -41,6 +43,9 @@ public class ActivityVotingTest {
 
     @Mock
     private TripService tripService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private ActivityManagementService activityManagementService;
@@ -84,7 +89,7 @@ public class ActivityVotingTest {
 
         Mockito.when(activityRepository.findById(100L)).thenReturn(Optional.of(testActivity));
         Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(100L, 1L, 2L)).thenReturn(Optional.of(testActivity));
-        Mockito.when(tripService.getTripForParticipant(1L, 123L)).thenReturn(testTrip);
+        Mockito.when(tripService.ensureTripWritableForParticipant(1L, 123L)).thenReturn(testTrip);
             Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(testDestination);
         Mockito.when(voteRepository.findByActivityIdAndUserId(100L, 123L)).thenReturn(Optional.empty());
         Mockito.when(voteRepository.countByActivityIdAndVoteType(100L, VoteType.UP)).thenReturn(1L);
@@ -111,7 +116,7 @@ public class ActivityVotingTest {
 
         Mockito.when(activityRepository.findById(100L)).thenReturn(Optional.of(testActivity));
         Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(100L, 1L, 2L)).thenReturn(Optional.of(testActivity));
-        Mockito.when(tripService.getTripForParticipant(1L, 123L)).thenReturn(testTrip);
+        Mockito.when(tripService.ensureTripWritableForParticipant(1L, 123L)).thenReturn(testTrip);
             Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(testDestination);
         Mockito.when(voteRepository.findByActivityIdAndUserId(100L, 123L)).thenReturn(Optional.empty());
         Mockito.when(voteRepository.countByActivityIdAndVoteType(100L, VoteType.UP)).thenReturn(0L);
@@ -139,7 +144,7 @@ public class ActivityVotingTest {
 
         Mockito.when(activityRepository.findById(100L)).thenReturn(Optional.of(testActivity));
         Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(100L, 1L, 2L)).thenReturn(Optional.of(testActivity));
-        Mockito.when(tripService.getTripForParticipant(1L, 123L)).thenReturn(testTrip);
+        Mockito.when(tripService.ensureTripWritableForParticipant(1L, 123L)).thenReturn(testTrip);
             Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(testDestination);
         Mockito.when(voteRepository.findByActivityIdAndUserId(100L, 123L)).thenReturn(Optional.of(existingUpVote));
         Mockito.when(voteRepository.countByActivityIdAndVoteType(100L, VoteType.UP)).thenReturn(0L);
@@ -166,7 +171,7 @@ public class ActivityVotingTest {
 
         Mockito.when(activityRepository.findById(100L)).thenReturn(Optional.of(testActivity));
         Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(100L, 1L, 2L)).thenReturn(Optional.of(testActivity));
-        Mockito.when(tripService.getTripForParticipant(1L, 123L)).thenReturn(testTrip);
+        Mockito.when(tripService.ensureTripWritableForParticipant(1L, 123L)).thenReturn(testTrip);
             Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(testDestination);
         Mockito.when(voteRepository.findByActivityIdAndUserId(100L, 123L)).thenReturn(Optional.of(existingUpVote));
         Mockito.when(voteRepository.countByActivityIdAndVoteType(100L, VoteType.UP)).thenReturn(0L);
@@ -194,7 +199,9 @@ public class ActivityVotingTest {
         inactiveTrip.setStatus(Trip.TripStatus.FINALIZED);
 
         Mockito.when(activityRepository.findById(100L)).thenReturn(Optional.of(testActivity));
-        Mockito.when(tripService.getTripForParticipant(1L, 123L)).thenReturn(inactiveTrip);
+        Mockito.when(tripService.ensureTripWritableForParticipant(1L, 123L)).thenThrow(
+            new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
+                "Trip is in read-only mode. Mutations are only allowed while trip is ACTIVE"));
 
         assertThrows(ResponseStatusException.class,
                 () -> activityManagementService.voteOnActivity(100L, 123L, voteRequest));
@@ -209,7 +216,7 @@ public class ActivityVotingTest {
         voteRequest.setVoteType("UP");
 
         Mockito.when(activityRepository.findById(100L)).thenReturn(Optional.of(testActivity));
-        Mockito.when(tripService.getTripForParticipant(1L, 123L))
+        Mockito.when(tripService.ensureTripWritableForParticipant(1L, 123L))
                 .thenThrow(new ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "Not a participant"));
 
         assertThrows(ResponseStatusException.class,
@@ -239,7 +246,7 @@ public class ActivityVotingTest {
         voteRequest.setVoteType("INVALID");
 
         Mockito.when(activityRepository.findById(100L)).thenReturn(Optional.of(testActivity));
-        Mockito.when(tripService.getTripForParticipant(1L, 123L)).thenReturn(testTrip);
+        Mockito.when(tripService.ensureTripWritableForParticipant(1L, 123L)).thenReturn(testTrip);
 
         assertThrows(ResponseStatusException.class,
                 () -> activityManagementService.voteOnActivity(100L, 123L, voteRequest));
@@ -252,7 +259,7 @@ public class ActivityVotingTest {
     public void voteOnActivity_nullVoteRequest_throwsException() {
         Mockito.when(activityRepository.findById(100L)).thenReturn(Optional.of(testActivity));
         Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(100L, 1L, 2L)).thenReturn(Optional.of(testActivity));
-        Mockito.when(tripService.getTripForParticipant(1L, 123L)).thenReturn(testTrip);
+        Mockito.when(tripService.ensureTripWritableForParticipant(1L, 123L)).thenReturn(testTrip);
             Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(testDestination);
 
         assertThrows(ResponseStatusException.class,
@@ -269,7 +276,7 @@ public class ActivityVotingTest {
 
         Mockito.when(activityRepository.findById(100L)).thenReturn(Optional.of(testActivity));
         Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(100L, 1L, 2L)).thenReturn(Optional.of(testActivity));
-        Mockito.when(tripService.getTripForParticipant(1L, 123L)).thenReturn(testTrip);
+        Mockito.when(tripService.ensureTripWritableForParticipant(1L, 123L)).thenReturn(testTrip);
             Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(testDestination);
         Mockito.when(voteRepository.findByActivityIdAndUserId(100L, 123L)).thenReturn(Optional.empty());
         Mockito.when(voteRepository.countByActivityIdAndVoteType(100L, VoteType.UP)).thenReturn(5L);
