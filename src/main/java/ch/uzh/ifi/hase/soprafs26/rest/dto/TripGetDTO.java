@@ -130,6 +130,8 @@ public class TripGetDTO implements Serializable {
 
     public void setCanEnterFinalEvaluation(boolean canEnterFinalEvaluation) {
         this.canEnterFinalEvaluation = canEnterFinalEvaluation;
+    }
+
     public String getImageBase64() {
         return imageBase64;
     }
