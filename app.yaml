@@ -11,3 +11,4 @@ env_variables:
   SPRING_DATASOURCE_DRIVER_CLASS_NAME: "com.mysql.cj.jdbc.Driver"
   SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
   SPRING_JPA_DATABASE_PLATFORM: "org.hibernate.dialect.MySQLDialect"
+  GOOGLE_MAPS_API_KEY: "AIzaSyDT_VeTqq3iasJ20H7go4E78jen7qMACcI"
