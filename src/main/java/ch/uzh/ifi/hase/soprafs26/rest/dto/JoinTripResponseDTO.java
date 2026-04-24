@@ -6,7 +6,6 @@ public class JoinTripResponseDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String roomCode;
-    private String roomUsername;
     private Long tripId;
     private Long userId;
 
@@ -16,14 +15,6 @@ public class JoinTripResponseDTO implements Serializable {
 
     public void setRoomCode(String roomCode) {
         this.roomCode = roomCode;
-    }
-
-    public String getRoomUsername() {
-        return roomUsername;
-    }
-
-    public void setRoomUsername(String roomUsername) {
-        this.roomUsername = roomUsername;
     }
 
     public Long getTripId() {

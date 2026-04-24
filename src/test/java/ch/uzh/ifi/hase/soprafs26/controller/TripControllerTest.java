@@ -25,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.entity.TripMembership;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.JoinTripRequestDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
@@ -125,32 +126,7 @@ public class TripControllerTest {
                 .andExpect(jsonPath("$.finalized", is(false)))
                 .andExpect(jsonPath("$.canEnterFinalEvaluation", is(true)));
     }
-
-    @Test
-    public void getTripByRoomCode_validCode_success() throws Exception {
-        // given
-        Trip trip = new Trip();
-        trip.setId(1L);
-        trip.setName("Paris Vacation");
-        trip.setRoomCode("ABC123");
-        trip.setHostId(1L);
-        trip.setStatus(Trip.TripStatus.ACTIVE);
-
-        given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
-        given(tripService.getTripByRoomCode("ABC123")).willReturn(trip);
-
-        // when
-        MockHttpServletRequestBuilder getRequest = get("/trips/room/ABC123")
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("Authorization", "Bearer 1");
-
-        // then
-        mockMvc.perform(getRequest)
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.roomCode", is("ABC123")))
-                .andExpect(jsonPath("$.name", is(trip.getName())));
-    }
-
+    
     @Test
     public void getTripsByHostId_validHostId_success() throws Exception {
         // given
@@ -384,10 +360,9 @@ public class TripControllerTest {
 
         JoinTripRequestDTO requestDTO = new JoinTripRequestDTO();
         requestDTO.setRoomCode("ABC123");
-        requestDTO.setRoomUsername("alice");
 
         given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
-        given(tripService.joinTripByRoomCode("ABC123", 1L, "alice")).willReturn(trip);
+        given(tripService.joinTripByRoomCode("ABC123", 1L)).willReturn(trip);
 
         MockHttpServletRequestBuilder postRequest = post("/trips/join")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -398,19 +373,17 @@ public class TripControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tripId", is(1)))
                 .andExpect(jsonPath("$.roomCode", is("ABC123")))
-                .andExpect(jsonPath("$.roomUsername", is("alice")))
                 .andExpect(jsonPath("$.userId", is(1)));
     }
 
     @Test
     public void joinTrip_badRequest_propagatesError() throws Exception {
         JoinTripRequestDTO requestDTO = new JoinTripRequestDTO();
-        requestDTO.setRoomCode("ABC123");
-        requestDTO.setRoomUsername("   ");
+        requestDTO.setRoomCode("   ");
 
         given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
-        given(tripService.joinTripByRoomCode("ABC123", 1L, "   "))
-                .willThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Room username cannot be empty"));
+        given(tripService.joinTripByRoomCode("   ", 1L))
+                .willThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Room code cannot be empty"));
 
         MockHttpServletRequestBuilder postRequest = post("/trips/join")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -419,6 +392,60 @@ public class TripControllerTest {
 
         mockMvc.perform(postRequest)
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void getTripParticipants_validRequest_success() throws Exception {
+        User aliceUser = new User();
+        aliceUser.setId(2L);
+        aliceUser.setUsername("alice");
+
+        given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
+        given(userService.getUserById(1L)).willReturn(authenticatedUser());
+        given(userService.getUserById(2L)).willReturn(aliceUser);
+        TripMembership host = new TripMembership(1L, 1L);
+        TripMembership guest = new TripMembership(1L, 2L);
+        given(tripService.getTripParticipants(1L, 1L)).willReturn(List.of(host, guest));
+
+        MockHttpServletRequestBuilder getRequest = get("/trips/1/participants")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer 1");
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].userId", is(1)))
+                .andExpect(jsonPath("$[0].username", is("testUser")))
+                .andExpect(jsonPath("$[1].userId", is(2)))
+                .andExpect(jsonPath("$[1].username", is("alice")));
+    }
+
+    @Test
+    public void getTripParticipants_guestRequester_returnsHostUsername() throws Exception {
+        User guestRequester = new User();
+        guestRequester.setId(2L);
+        guestRequester.setUsername("guestUser");
+
+        User hostUser = new User();
+        hostUser.setId(1L);
+        hostUser.setUsername("hostUser");
+
+        given(userService.validateToken("Bearer 2")).willReturn(guestRequester);
+        given(userService.getUserById(1L)).willReturn(hostUser);
+        given(userService.getUserById(2L)).willReturn(guestRequester);
+        given(tripService.getTripParticipants(1L, 2L)).willReturn(List.of(
+                new TripMembership(1L, 1L),
+                new TripMembership(1L, 2L)
+        ));
+
+        MockHttpServletRequestBuilder getRequest = get("/trips/1/participants")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer 2");
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].userId", is(1)))
+                .andExpect(jsonPath("$[0].username", is("hostUser")));
     }
 
     @Test
