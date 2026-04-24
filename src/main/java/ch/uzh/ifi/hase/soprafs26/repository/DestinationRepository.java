@@ -11,5 +11,7 @@ import java.util.Optional;
 public interface DestinationRepository extends JpaRepository<Destination, Long> {
     List<Destination> findByTripIdOrderByIdDesc(Long tripId);
 
+    boolean existsByTripId(Long tripId);
+
     Optional<Destination> findByIdAndTripId(Long destinationId, Long tripId);
 }

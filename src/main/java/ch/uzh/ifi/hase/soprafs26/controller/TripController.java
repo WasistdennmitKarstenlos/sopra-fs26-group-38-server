@@ -60,7 +60,7 @@ public class TripController {
         User authenticatedUser = userService.validateToken(token);
         List<Trip> trips = tripService.getTripsForUser(authenticatedUser.getId());
         return trips.stream()
-                .map(DTOMapper.INSTANCE::convertEntityToTripGetDTO)
+                .map(trip -> toTripGetDTOForUser(trip, authenticatedUser.getId()))
                 .collect(Collectors.toList());
     }
 
@@ -72,9 +72,9 @@ public class TripController {
     @GetMapping("/{tripId}")
     @ResponseStatus(HttpStatus.OK)
     public TripGetDTO getTripById(@RequestHeader(value = "Authorization", required = false) String token,@PathVariable Long tripId) {
-        userService.validateToken(token);
+        User authenticatedUser = userService.validateToken(token);
         Trip trip = tripService.getTripById(tripId);
-        return DTOMapper.INSTANCE.convertEntityToTripGetDTO(trip);
+        return toTripGetDTOForUser(trip, authenticatedUser.getId());
     }
 
     /**
@@ -87,9 +87,9 @@ public class TripController {
     @ResponseStatus(HttpStatus.OK)
     public TripGetDTO getTripByRoomCode(@RequestHeader(value = "Authorization", required = false) String token,
                                         @PathVariable String roomCode) {
-        userService.validateToken(token);
+        User authenticatedUser = userService.validateToken(token);
         Trip trip = tripService.getTripByRoomCode(roomCode);
-        return DTOMapper.INSTANCE.convertEntityToTripGetDTO(trip);
+        return toTripGetDTOForUser(trip, authenticatedUser.getId());
     }
 
     /**
@@ -124,10 +124,10 @@ public class TripController {
     @ResponseStatus(HttpStatus.OK)
     public List<TripGetDTO> getTripsByHostId(@RequestHeader(value = "Authorization", required = false) String token,
                                              @PathVariable Long hostId) {
-        userService.validateToken(token);
+        User authenticatedUser = userService.validateToken(token);
         List<Trip> trips = tripService.getTripsByHostId(hostId);
         return trips.stream()
-                .map(DTOMapper.INSTANCE::convertEntityToTripGetDTO)
+            .map(trip -> toTripGetDTOForUser(trip, authenticatedUser.getId()))
                 .collect(Collectors.toList());
     }
 
@@ -147,7 +147,7 @@ public class TripController {
         trip.setHostId(authenticatedUser.getId());
         
         Trip createdTrip = tripService.createTrip(trip);
-        return DTOMapper.INSTANCE.convertEntityToTripGetDTO(createdTrip);
+        return toTripGetDTOForUser(createdTrip, authenticatedUser.getId());
     }
 
     /**
@@ -195,16 +195,31 @@ public class TripController {
                                        @RequestParam Trip.TripStatus newStatus) {
         User authenticatedUser = userService.validateToken(token);
 
-        Trip trip = tripService.getTripById(tripId);
-        if (!trip.getHostId().equals(authenticatedUser.getId())) {
+        if (newStatus != Trip.TripStatus.EVALUATION) {
             throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Only the host can update this trip's status"
+                    HttpStatus.BAD_REQUEST,
+                    "Only transition to EVALUATION is supported via this endpoint"
             );
         }
 
-        Trip updatedTrip = tripService.updateTripStatus(tripId, newStatus);
-        return DTOMapper.INSTANCE.convertEntityToTripGetDTO(updatedTrip);
+        Trip updatedTrip = tripService.enterFinalEvaluation(tripId, authenticatedUser.getId());
+        return toTripGetDTOForUser(updatedTrip, authenticatedUser.getId());
+    }
+
+    /**
+     * Enter final evaluation mode.
+     * Dedicated endpoint for host action "Final Evaluation".
+     * @param tripId the ID of the trip
+     * @param token Authorization header containing Bearer token
+     * @return the updated trip in EVALUATION status
+     */
+    @PostMapping("/{tripId}/final-evaluation")
+    @ResponseStatus(HttpStatus.OK)
+    public TripGetDTO enterFinalEvaluation(@RequestHeader(value = "Authorization", required = false) String token,
+                                           @PathVariable Long tripId) {
+        User authenticatedUser = userService.validateToken(token);
+        Trip updatedTrip = tripService.enterFinalEvaluation(tripId, authenticatedUser.getId());
+        return toTripGetDTOForUser(updatedTrip, authenticatedUser.getId());
     }
 
     /**
@@ -219,8 +234,18 @@ public class TripController {
     public TripGetDTO setFinalDestination(@RequestHeader(value = "Authorization", required = false) String token,
                                            @PathVariable Long tripId,
                                            @RequestParam Long finalDestinationId) {
-        userService.validateToken(token);
+        User authenticatedUser = userService.validateToken(token);
         Trip updatedTrip = tripService.setFinalDestination(tripId, finalDestinationId);
-        return DTOMapper.INSTANCE.convertEntityToTripGetDTO(updatedTrip);
+        return toTripGetDTOForUser(updatedTrip, authenticatedUser.getId());
+    }
+
+    private TripGetDTO toTripGetDTOForUser(Trip trip, Long userId) {
+        TripGetDTO dto = DTOMapper.INSTANCE.convertEntityToTripGetDTO(trip);
+        boolean isHost = trip.getHostId() != null && trip.getHostId().equals(userId);
+        dto.setHost(isHost);
+        dto.setEvaluationMode(trip.getStatus() == Trip.TripStatus.EVALUATION);
+        dto.setFinalized(trip.getStatus() == Trip.TripStatus.FINALIZED);
+        dto.setCanEnterFinalEvaluation(tripService.canEnterFinalEvaluation(trip, userId));
+        return dto;
     }
 }

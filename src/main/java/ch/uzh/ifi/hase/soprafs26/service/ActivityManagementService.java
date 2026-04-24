@@ -1,7 +1,6 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Activity;
-import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.entity.Vote;
 import ch.uzh.ifi.hase.soprafs26.entity.VoteType;
 import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
@@ -126,11 +125,8 @@ public class ActivityManagementService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid vote type. Use UP or DOWN.");
         }
 
-        // Ensure the trip is active and the user is a participant before allowing voting
-        Trip trip = tripService.getTripForParticipant(tripId, userId);
-        if (trip.getStatus() != Trip.TripStatus.ACTIVE) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Voting is only allowed while the trip is ACTIVE");
-        }
+        // Ensure the user is a participant and the trip is writable before allowing voting.
+        tripService.ensureTripWritableForParticipant(tripId, userId);
 
         destinationService.getDestinationEntity(tripId, destinationId);
 
