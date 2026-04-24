@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.entity.TripMembership;
+import ch.uzh.ifi.hase.soprafs26.event.TripStatusUpdatedEvent;
 import ch.uzh.ifi.hase.soprafs26.repository.DestinationRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.TripMembershipRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.TripRepository;
@@ -26,14 +28,17 @@ public class TripService {
     private final TripRepository tripRepository;
     private final DestinationRepository destinationRepository;
     private final TripMembershipRepository tripMembershipRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public TripService(
             TripRepository tripRepository,
             DestinationRepository destinationRepository,
-            TripMembershipRepository tripMembershipRepository) {
+            TripMembershipRepository tripMembershipRepository,
+            ApplicationEventPublisher eventPublisher) {
         this.tripRepository = tripRepository;
         this.destinationRepository = destinationRepository;
         this.tripMembershipRepository = tripMembershipRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -250,6 +255,7 @@ public class TripService {
         trip.setStatus(Trip.TripStatus.EVALUATION);
         Trip updatedTrip = tripRepository.save(trip);
         log.info("Trip {} entered EVALUATION mode", tripId);
+        eventPublisher.publishEvent(new TripStatusUpdatedEvent(this, tripId, Trip.TripStatus.EVALUATION.name()));
         return updatedTrip;
     }
 

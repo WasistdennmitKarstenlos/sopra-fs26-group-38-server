@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.context.event.EventListener;
 import ch.uzh.ifi.hase.soprafs26.event.DestinationVotesUpdatedEvent;
+import ch.uzh.ifi.hase.soprafs26.event.TripStatusUpdatedEvent;
 
 import java.util.List;
 import java.util.Objects;
@@ -103,6 +104,13 @@ public class DestinationController {
         if (destinationRealtimeService != null) {
             List<DestinationGetDTO> sharedList = buildSharedDestinationList(event.getTripId(), event.getUserId());
             destinationRealtimeService.publish(event.getTripId(), sharedList);
+        }
+    }
+
+    @EventListener
+    public void handleTripStatusUpdated(TripStatusUpdatedEvent event) {
+        if (destinationRealtimeService != null) {
+            destinationRealtimeService.publish(event.getTripId(), "trip-status-updated", event.getStatus());
         }
     }
 

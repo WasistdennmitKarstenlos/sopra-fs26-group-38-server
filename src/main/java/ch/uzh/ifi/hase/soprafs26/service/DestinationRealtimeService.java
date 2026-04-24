@@ -26,6 +26,10 @@ public class DestinationRealtimeService {
     }
 
     public void publish(Long tripId, Object payload) {
+        publish(tripId, "destinations-updated", payload);
+    }
+
+    public void publish(Long tripId, String eventName, Object payload) {
         List<SseEmitter> emitters = tripEmitters.get(tripId);
         if (emitters == null || emitters.isEmpty()) {
             return;
@@ -33,7 +37,7 @@ public class DestinationRealtimeService {
 
         for (SseEmitter emitter : emitters) {
             try {
-                emitter.send(SseEmitter.event().name("destinations-updated").data(payload));
+                emitter.send(SseEmitter.event().name(eventName).data(payload));
             } catch (IOException | IllegalStateException ex) {
                 removeEmitter(tripId, emitter);
             }
