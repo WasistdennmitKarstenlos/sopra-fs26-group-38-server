@@ -73,7 +73,7 @@ public class ActivitySearchServiceTest {
         assertEquals("City Museum", results.get(0).getName());
         assertEquals("Main Street 1", results.get(0).getAddress());
         assertEquals(4.6, results.get(0).getRating());
-        assertEquals("https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=photo-ref-1&key=test-key", results.get(0).getPhotoUrl());
+        assertEquals("/activities/photo?photoReference=photo-ref-1&maxwidth=800", results.get(0).getPhotoUrl());
         assertEquals(47.3769, results.get(0).getLatitude());
         assertEquals(8.5417, results.get(0).getLongitude());
     }

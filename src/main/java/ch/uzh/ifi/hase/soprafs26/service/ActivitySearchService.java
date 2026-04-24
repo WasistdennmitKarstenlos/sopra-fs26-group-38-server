@@ -4,11 +4,14 @@ import ch.uzh.ifi.hase.soprafs26.config.GoogleMapsProperties;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 import tools.jackson.databind.ObjectMapper;
@@ -103,6 +106,39 @@ public class ActivitySearchService {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                     "Failed to parse activity search response", ex);
         }
+    }
+
+    public ResponseEntity<byte[]> fetchPhoto(String photoReference, Integer maxWidth) {
+        if (photoReference == null || photoReference.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Photo reference cannot be empty");
+        }
+
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Google Maps API key is not configured");
+        }
+
+        int width = (maxWidth != null && maxWidth > 0 && maxWidth <= 1600) ? maxWidth : 800;
+        String requestUrl = UriComponentsBuilder.fromUriString("https://maps.googleapis.com/maps/api/place/photo")
+                .queryParam("maxwidth", width)
+                .queryParam("photo_reference", photoReference.trim())
+                .queryParam("key", apiKey.trim())
+                .toUriString();
+
+        ResponseEntity<byte[]> response = restTemplate.getForEntity(requestUrl, byte[].class);
+        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Activity photo provider returned an invalid response");
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        MediaType contentType = response.getHeaders().getContentType();
+        headers.setContentType(contentType != null ? contentType : MediaType.APPLICATION_OCTET_STREAM);
+        long contentLength = response.getHeaders().getContentLength();
+        if (contentLength > 0) {
+            headers.setContentLength(contentLength);
+        }
+        return new ResponseEntity<>(response.getBody(), headers, HttpStatus.OK);
     }
 
     private ActivitySearchResultDTO mapResult(GooglePlacesResult resultNode) {
@@ -275,11 +311,19 @@ public class ActivitySearchService {
             return null;
         }
 
-        return UriComponentsBuilder.fromUriString("https://maps.googleapis.com/maps/api/place/photo")
-                .queryParam("maxwidth", 800)
-                .queryParam("photo_reference", resultNode.getPhotos().get(0).getPhotoReference())
-                .queryParam("key", apiKey.trim())
-                .toUriString();
+        String photoReference = resultNode.getPhotos().get(0).getPhotoReference();
+        try {
+            return ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path("/activities/photo")
+                    .queryParam("photoReference", photoReference)
+                    .queryParam("maxwidth", 800)
+                    .toUriString();
+        } catch (IllegalStateException ex) {
+            return UriComponentsBuilder.fromPath("/activities/photo")
+                    .queryParam("photoReference", photoReference)
+                    .queryParam("maxwidth", 800)
+                    .toUriString();
+        }
     }
 
     private static String redactApiKey(String url) {

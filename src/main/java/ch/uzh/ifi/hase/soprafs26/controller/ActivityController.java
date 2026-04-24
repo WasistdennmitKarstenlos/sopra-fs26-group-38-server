@@ -10,6 +10,7 @@ import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
 import ch.uzh.ifi.hase.soprafs26.service.ActivitySearchService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -109,6 +110,13 @@ public class ActivityController {
                                                                 @RequestHeader(value = "Authorization", required = false) String token) {
         userService.validateToken(token);
         return activitySearchService.searchActivities(null, null, query, location, radius);
+    }
+
+    @GetMapping("/activities/photo")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<byte[]> getActivityPhoto(@RequestParam("photoReference") String photoReference,
+                                                   @RequestParam(value = "maxwidth", required = false) Integer maxWidth) {
+        return activitySearchService.fetchPhoto(photoReference, maxWidth);
     }
 
     private static Activity toActivityEntity(ActivityPostDTO activityPostDTO) {
