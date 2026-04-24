@@ -37,8 +37,7 @@ public class Trip implements Serializable {
     @Column
     private Long finalDestinationId; // ID of the selected destination (after final evaluation)
 
-    @Lob
-    @Column(nullable = true)
+    @Column(nullable = true, columnDefinition = "LONGTEXT")
     private String imageBase64;
 
     // Constructors
