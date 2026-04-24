@@ -3,3 +3,10 @@
 
 runtime: java17
 instance_class: F2
+
+env_variables:
+  SPRING_DATASOURCE_URL: "jdbc:postgresql:///sopra-db-prod?cloudSqlInstance=sopra-fs26-group-38-server:europe-west6:sopra-db&socketFactory=com.google.cloud.sql.postgres.SocketFactory"
+  SPRING_DATASOURCE_USERNAME: "root"
+  SPRING_DATASOURCE_PASSWORD: "8;y`nvy.1$&AV^kd"
+  SPRING_DATASOURCE_DRIVER_CLASS_NAME: "org.postgresql.Driver"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
