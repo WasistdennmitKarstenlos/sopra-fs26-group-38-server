@@ -21,6 +21,7 @@ public class TripGetDTO implements Serializable {
     private boolean finalized;
     private boolean isHost;
     private boolean canEnterFinalEvaluation;
+    private String imageBase64;
 
     // Constructors
     public TripGetDTO() {
@@ -129,5 +130,11 @@ public class TripGetDTO implements Serializable {
 
     public void setCanEnterFinalEvaluation(boolean canEnterFinalEvaluation) {
         this.canEnterFinalEvaluation = canEnterFinalEvaluation;
+    public String getImageBase64() {
+        return imageBase64;
+    }
+
+    public void setImageBase64(String imageBase64) {
+        this.imageBase64 = imageBase64;
     }
 }

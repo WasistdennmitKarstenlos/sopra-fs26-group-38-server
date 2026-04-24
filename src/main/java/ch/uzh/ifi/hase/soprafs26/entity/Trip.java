@@ -37,6 +37,10 @@ public class Trip implements Serializable {
     @Column
     private Long finalDestinationId; // ID of the selected destination (after final evaluation)
 
+    @Lob
+    @Column(nullable = true)
+    private String imageBase64;
+
     // Constructors
     public Trip() {
         this.status = TripStatus.ACTIVE;
@@ -106,6 +110,14 @@ public class Trip implements Serializable {
 
     public void setFinalDestinationId(Long finalDestinationId) {
         this.finalDestinationId = finalDestinationId;
+    }
+
+    public String getImageBase64() {
+        return imageBase64;
+    }
+
+    public void setImageBase64(String imageBase64) {
+        this.imageBase64 = imageBase64;
     }
 
     // Nested enum for Trip status
