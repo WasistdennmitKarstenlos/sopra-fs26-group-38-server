@@ -10,7 +10,6 @@ import ch.uzh.ifi.hase.soprafs26.entity.TripMembership;
 @Repository("tripMembershipRepository")
 public interface TripMembershipRepository extends JpaRepository<TripMembership, Long> {
     boolean existsByTripIdAndUserId(Long tripId, Long userId);
-    boolean existsByTripIdAndRoomUsername(Long tripId, String roomUsername);
 
     List<TripMembership> findByTripIdOrderByIdAsc(Long tripId);
     List<TripMembership> findByUserId(Long userId);

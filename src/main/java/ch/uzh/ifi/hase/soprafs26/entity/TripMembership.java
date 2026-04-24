@@ -28,9 +28,6 @@ public class TripMembership implements Serializable {
     @Column(nullable = false)
     private Long userId;
 
-    @Column
-    private String roomUsername;
-
     public TripMembership() {
         // JPA default constructor
     }
@@ -38,12 +35,6 @@ public class TripMembership implements Serializable {
     public TripMembership(Long tripId, Long userId) {
         this.tripId = tripId;
         this.userId = userId;
-    }
-
-    public TripMembership(Long tripId, Long userId, String roomUsername) {
-        this.tripId = tripId;
-        this.userId = userId;
-        this.roomUsername = roomUsername;
     }
 
     public Long getId() {
@@ -70,11 +61,4 @@ public class TripMembership implements Serializable {
         this.userId = userId;
     }
 
-    public String getRoomUsername() {
-        return roomUsername;
-    }
-
-    public void setRoomUsername(String roomUsername) {
-        this.roomUsername = roomUsername;
-    }
 }

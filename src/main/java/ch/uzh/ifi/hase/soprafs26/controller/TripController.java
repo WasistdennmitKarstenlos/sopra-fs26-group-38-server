@@ -95,9 +95,9 @@ public class TripController {
     }
 
     /**
-     * Join a trip using a room code and room username.
+     * Join a trip using a room code.
      * Requires authentication and records membership for destination permissions.
-     * @param requestDTO request body containing roomCode and roomUsername
+     * @param requestDTO request body containing roomCode
      * @param token authorization header
      * @return joined trip details
      */
@@ -107,12 +107,11 @@ public class TripController {
             @RequestBody JoinTripRequestDTO requestDTO,
             @RequestHeader(value = "Authorization", required = false) String token) {
         User requester = userService.validateToken(token);
-        Trip trip = tripService.joinTripByRoomCode(requestDTO.getRoomCode(), requester.getId(), requestDTO.getRoomUsername());
+        Trip trip = tripService.joinTripByRoomCode(requestDTO.getRoomCode(), requester.getId());
 
         JoinTripResponseDTO response = new JoinTripResponseDTO();
         response.setTripId(trip.getId());
         response.setRoomCode(trip.getRoomCode());
-        response.setRoomUsername(requestDTO.getRoomUsername());
         response.setUserId(requester.getId());
         return response;
     }
@@ -121,7 +120,7 @@ public class TripController {
      * Get all participants of a trip.
      * @param tripId trip id
      * @param token authorization header
-     * @return list of participants with display name per room
+     * @return list of participants with their account username
      */
     @GetMapping("/{tripId}/participants")
     @ResponseStatus(HttpStatus.OK)
@@ -129,28 +128,13 @@ public class TripController {
             @PathVariable Long tripId,
             @RequestHeader(value = "Authorization", required = false) String token) {
         User requester = userService.validateToken(token);
-        Trip trip = tripService.getTripById(tripId);
-        User hostUser = userService.getUserById(trip.getHostId());
         List<TripMembership> memberships = tripService.getTripParticipants(tripId, requester.getId());
 
         return memberships.stream().map(membership -> {
             TripParticipantDTO participant = new TripParticipantDTO();
             participant.setUserId(membership.getUserId());
-            String fallbackName;
-            if (membership.getUserId().equals(trip.getHostId())) {
-                fallbackName = hostUser.getUsername();
-            }
-            else if (membership.getUserId().equals(requester.getId())) {
-                fallbackName = requester.getUsername();
-            }
-            else {
-                fallbackName = "User " + membership.getUserId();
-            }
-            participant.setRoomUsername(
-                    membership.getRoomUsername() == null || membership.getRoomUsername().trim().isEmpty()
-                            ? fallbackName
-                            : membership.getRoomUsername()
-            );
+            User memberUser = userService.getUserById(membership.getUserId());
+            participant.setUsername(memberUser.getUsername());
             return participant;
         }).collect(Collectors.toList());
     }

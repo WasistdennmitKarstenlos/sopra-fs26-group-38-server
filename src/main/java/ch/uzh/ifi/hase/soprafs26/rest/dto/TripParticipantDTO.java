@@ -6,7 +6,7 @@ public class TripParticipantDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private Long userId;
-    private String roomUsername;
+    private String username;
 
     public Long getUserId() {
         return userId;
@@ -16,11 +16,11 @@ public class TripParticipantDTO implements Serializable {
         this.userId = userId;
     }
 
-    public String getRoomUsername() {
-        return roomUsername;
+    public String getUsername() {
+        return username;
     }
 
-    public void setRoomUsername(String roomUsername) {
-        this.roomUsername = roomUsername;
+    public void setUsername(String username) {
+        this.username = username;
     }
 }

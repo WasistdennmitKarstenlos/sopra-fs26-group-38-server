@@ -1,7 +1,6 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -128,13 +127,11 @@ public class TripService {
      * Join a trip by room code.
      * @param roomCode room code for the trip
      * @param userId logged-in user id
-     * @param roomUsername username for this user within the trip room
      * @return the joined trip
      */
-    public Trip joinTripByRoomCode(String roomCode, Long userId, String roomUsername) {
-        validateJoinTrip(roomCode, roomUsername);
+    public Trip joinTripByRoomCode(String roomCode, Long userId) {
+        validateRoomCode(roomCode);
         Trip trip = getTripByRoomCode(roomCode);
-        String normalizedRoomUsername = roomUsername.trim().toLowerCase(Locale.ROOT);
 
         if (trip.getStatus() != Trip.TripStatus.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trip is closed for joining");
@@ -144,17 +141,7 @@ public class TripService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "User is already a member of this trip");
         }
 
-        boolean roomUsernameTaken = tripMembershipRepository.findByTripIdOrderByIdAsc(trip.getId()).stream()
-            .map(TripMembership::getRoomUsername)
-            .filter(username -> username != null && !username.trim().isEmpty())
-            .map(username -> username.trim().toLowerCase(Locale.ROOT))
-            .anyMatch(normalizedRoomUsername::equals);
-
-        if (roomUsernameTaken) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Room username is already taken in this trip");
-        }
-
-        tripMembershipRepository.save(new TripMembership(trip.getId(), userId, normalizedRoomUsername));
+        tripMembershipRepository.save(new TripMembership(trip.getId(), userId));
 
         return trip;
     }
@@ -370,25 +357,12 @@ public class TripService {
         }
     }
 
-        /**
-     * Validate join trip input
-     * @param roomCode the room code to join
-     * @param  roomUsername the username for this user within the trip room
-     * @throws ResponseStatusException if validation fails
-     */
-    private void validateJoinTrip(String roomCode, String roomUsername) {
+    private void validateRoomCode(String roomCode) {
         if (roomCode == null || roomCode.trim().isEmpty()) {
             log.warn("Join trip failed: room code is empty");
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Room code cannot be empty"
-            );
-        }
-        if (roomUsername == null || roomUsername.trim().isEmpty() || roomUsername.length() > 20) {
-            log.warn("Join trip failed: room username is empty or too long");
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Room username cannot be empty or exceed 20 characters"
             );
         }
     }
