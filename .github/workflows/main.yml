@@ -1,4 +1,4 @@
-name: Deploy Project to App Engine
+name: Deploy Project to App Engine Flex
 
 on:
   push:
@@ -53,12 +53,12 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SERVICE_CREDENTIALS }}
 
-      - name: Deploy to App Engine
+      - name: Deploy to App Engine Flex
         id: deploy
         uses: google-github-actions/deploy-appengine@v3
         with:
           deliverables: app.yaml
-          version: v1
+          version: v-${{ github.run_number }}-${{ github.run_attempt }}
           env_vars: |
             GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }}
 
