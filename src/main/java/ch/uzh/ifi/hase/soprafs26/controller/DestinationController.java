@@ -12,6 +12,7 @@ import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationService;
 import ch.uzh.ifi.hase.soprafs26.service.TripService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -90,12 +91,17 @@ public class DestinationController {
      * @return SSE emitter
      */
     @GetMapping(value = "/trips/{tripId}/destinations/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @ResponseStatus(HttpStatus.OK)
     public SseEmitter streamDestinations(
             @PathVariable Long tripId,
-            @RequestHeader(value = "Authorization", required = false) String token) {
+            @RequestHeader(value = "Authorization", required = false) String token,
+            HttpServletResponse response) {
         User requester = userService.validateToken(token);
         tripService.getDestinations(tripId, requester.getId());
+
+        response.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE);
+        response.setHeader("Cache-Control", "no-cache, no-transform");
+        response.setHeader("X-Accel-Buffering", "no");
+
         return destinationRealtimeService.subscribe(tripId);
     }
 

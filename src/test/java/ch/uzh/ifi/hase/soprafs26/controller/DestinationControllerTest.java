@@ -25,6 +25,7 @@ import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -179,6 +180,8 @@ public class DestinationControllerTest {
 
         mockMvc.perform(get("/trips/1/destinations/stream")
                         .header("Authorization", "Bearer token"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", "no-cache, no-transform"))
+                .andExpect(header().string("X-Accel-Buffering", "no"));
     }
 }

@@ -12,15 +12,26 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Service
 public class DestinationRealtimeService {
 
+    private static final long SSE_TIMEOUT_MS = 55 * 60 * 1000L;
+
     private final Map<Long, List<SseEmitter>> tripEmitters = new ConcurrentHashMap<>();
 
     public SseEmitter subscribe(Long tripId) {
-        SseEmitter emitter = new SseEmitter(0L);
+        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
         tripEmitters.computeIfAbsent(tripId, ignored -> new CopyOnWriteArrayList<>()).add(emitter);
 
         emitter.onCompletion(() -> removeEmitter(tripId, emitter));
         emitter.onTimeout(() -> removeEmitter(tripId, emitter));
         emitter.onError(ignored -> removeEmitter(tripId, emitter));
+
+        try {
+            emitter.send(SseEmitter.event()
+                    .name("connected")
+                    .reconnectTime(5000L)
+                    .data("ok"));
+        } catch (IOException | IllegalStateException ex) {
+            removeEmitter(tripId, emitter);
+        }
 
         return emitter;
     }
