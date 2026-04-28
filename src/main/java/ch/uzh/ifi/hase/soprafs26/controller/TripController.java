@@ -278,7 +278,7 @@ public class TripController {
     @GetMapping("/{tripId}/final-report")
     @ResponseStatus(HttpStatus.OK)
     public FinalReportGetDTO getFinalReport(@RequestHeader(value = "Authorization", required = false) String token,
-                                            @PathVariable Long tripId) {
+                                            @PathVariable("tripId") Long tripId) {
         User authenticatedUser = userService.validateToken(token);
         return finalReportService.getFinalReport(tripId, authenticatedUser.getId());
     }
