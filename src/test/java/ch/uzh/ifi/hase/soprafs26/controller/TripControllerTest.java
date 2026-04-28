@@ -27,9 +27,11 @@ import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.entity.TripMembership;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.FinalReportGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.JoinTripRequestDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
+import ch.uzh.ifi.hase.soprafs26.service.FinalReportService;
 import ch.uzh.ifi.hase.soprafs26.service.TripService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 import tools.jackson.databind.ObjectMapper;
@@ -51,6 +53,9 @@ public class TripControllerTest {
 
     @MockitoBean
     private DestinationRealtimeService destinationRealtimeService;
+
+        @MockitoBean
+        private FinalReportService finalReportService;
   
     @MockitoBean
     private UserService userService;
