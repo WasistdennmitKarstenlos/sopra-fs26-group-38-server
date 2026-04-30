@@ -13,5 +13,9 @@ public interface DestinationRepository extends JpaRepository<Destination, Long> 
 
     boolean existsByTripId(Long tripId);
 
+    boolean existsByTripIdAndDestinationNameIgnoreCase(Long tripId, String destinationName);
+
+    boolean existsByTripIdAndDestinationNameIgnoreCaseAndIdNot(Long tripId, String destinationName, Long destinationId);
+
     Optional<Destination> findByIdAndTripId(Long destinationId, Long tripId);
 }

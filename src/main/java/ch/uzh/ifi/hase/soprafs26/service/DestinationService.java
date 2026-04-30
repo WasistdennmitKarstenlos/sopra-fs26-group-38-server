@@ -43,6 +43,7 @@ public class DestinationService {
         tripService.ensureTripIsActiveForMutations(tripId);
         destination.setTripId(tripId);
         validate(destination);
+        ensureDestinationNameIsUnique(tripId, destination.getDestinationName());
 
         return destinationRepository.save(destination);
     }
@@ -51,7 +52,8 @@ public class DestinationService {
         tripService.ensureTripIsActiveForMutations(tripId);
         validate(destinationUpdate);
         Destination destination = getDestinationEntity(tripId, destinationId);
-        destination.setDestinationName(destinationUpdate.getDestinationName().trim());
+        ensureDestinationNameIsUniqueForUpdate(tripId, destinationUpdate.getDestinationName(), destinationId);
+        destination.setDestinationName(destinationUpdate.getDestinationName());
         return destinationRepository.save(destination);
     }
 
@@ -96,6 +98,19 @@ public class DestinationService {
     private void validate(Destination destination) {
         if (destination == null || destination.getDestinationName() == null || destination.getDestinationName().trim().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Destination name cannot be empty");
+        }
+        destination.setDestinationName(destination.getDestinationName().trim());
+    }
+
+    private void ensureDestinationNameIsUnique(Long tripId, String destinationName) {
+        if (destinationRepository.existsByTripIdAndDestinationNameIgnoreCase(tripId, destinationName)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Destination with this name already exists for this trip");
+        }
+    }
+
+    private void ensureDestinationNameIsUniqueForUpdate(Long tripId, String destinationName, Long currentDestinationId) {
+        if (destinationRepository.existsByTripIdAndDestinationNameIgnoreCaseAndIdNot(tripId, destinationName, currentDestinationId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Destination with this name already exists for this trip");
         }
     }
 }

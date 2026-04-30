@@ -3,10 +3,11 @@ package ch.uzh.ifi.hase.soprafs26.entity;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
-import java.util.Date;
 
 @Entity
-@Table(name = "DESTINATION")
+@Table(name = "DESTINATION", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"tripId", "destinationName"})
+})
 public class Destination implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -56,4 +57,3 @@ public class Destination implements Serializable {
         this.proposedByUserId = proposedByUserId;
     }
 }
-

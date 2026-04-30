@@ -131,6 +131,26 @@ public class DestinationControllerTest {
     }
 
     @Test
+    public void createDestination_duplicateName_conflict() throws Exception {
+        User user = new User();
+        user.setId(1L);
+
+        DestinationPostDTO postDTO = new DestinationPostDTO();
+        postDTO.setDestinationName("Zurich");
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.when(tripService.addDestination(Mockito.eq(1L), Mockito.eq(1L), Mockito.any(Destination.class)))
+                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Destination with this name already exists for this trip"));
+
+        mockMvc.perform(post("/trips/1/destinations")
+                        .header("Authorization", "Bearer token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(postDTO)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     public void createDestination_emptyName_badRequest() throws Exception {
         User user = new User();
         user.setId(1L);

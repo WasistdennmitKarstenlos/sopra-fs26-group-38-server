@@ -162,6 +162,7 @@ public class TripService {
         validateDestinationInput(destination);
         ensureParticipant(tripId, userId);
         ensureTripIsWritable(trip);
+        ensureDestinationNameIsUnique(tripId, destination.getDestinationName());
 
         destination.setTripId(tripId);
         destination.setProposedByUserId(userId);
@@ -406,10 +407,16 @@ public class TripService {
     }
 
     private void validateDestinationInput(Destination destination) {
-        if (destination.getDestinationName() == null || destination.getDestinationName().trim().isEmpty()) {
+        if (destination == null || destination.getDestinationName() == null || destination.getDestinationName().trim().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Destination name cannot be empty");
         }
         destination.setDestinationName(destination.getDestinationName().trim());
+    }
+
+    private void ensureDestinationNameIsUnique(Long tripId, String destinationName) {
+        if (destinationRepository.existsByTripIdAndDestinationNameIgnoreCase(tripId, destinationName)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Destination with this name already exists for this trip");
+        }
     }
 
     private void ensureTripIsWritable(Trip trip) {

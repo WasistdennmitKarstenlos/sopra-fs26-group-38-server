@@ -59,6 +59,22 @@ public class DestinationServiceTest {
     }
 
     @Test
+    public void createDestination_duplicateName_conflict() {
+        Destination destination = new Destination();
+        destination.setDestinationName(" zurich ");
+
+        Mockito.when(destinationRepository.existsByTripIdAndDestinationNameIgnoreCase(1L, "zurich"))
+                .thenReturn(true);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> destinationService.createDestination(1L, destination));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+        Mockito.verify(destinationRepository, Mockito.never()).save(Mockito.any());
+    }
+
+    @Test
     public void updateDestination_readOnlyMode_badRequest() {
         Destination update = new Destination();
         update.setDestinationName("Basel");
@@ -95,6 +111,28 @@ public class DestinationServiceTest {
         destinationService.updateDestination(1L, 11L, update);
 
         Mockito.verify(destinationRepository, Mockito.times(1)).save(existing);
+    }
+
+    @Test
+    public void updateDestination_duplicateName_conflict() {
+        Destination existing = new Destination();
+        existing.setId(11L);
+        existing.setTripId(1L);
+        existing.setDestinationName("Old Name");
+
+        Destination update = new Destination();
+        update.setDestinationName("Zurich");
+
+        Mockito.when(destinationRepository.findByIdAndTripId(11L, 1L)).thenReturn(Optional.of(existing));
+        Mockito.when(destinationRepository.existsByTripIdAndDestinationNameIgnoreCaseAndIdNot(1L, "Zurich", 11L))
+                .thenReturn(true);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> destinationService.updateDestination(1L, 11L, update));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+        Mockito.verify(destinationRepository, Mockito.never()).save(Mockito.any());
     }
 
     @Test

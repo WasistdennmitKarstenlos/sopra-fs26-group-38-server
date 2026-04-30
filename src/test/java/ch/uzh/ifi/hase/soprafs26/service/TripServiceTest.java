@@ -335,6 +335,23 @@ public class TripServiceTest {
     }
 
     @Test
+    public void addDestination_duplicateName_conflict() {
+        Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
+        Mockito.when(destinationRepository.existsByTripIdAndDestinationNameIgnoreCase(1L, "Zurich"))
+                .thenReturn(true);
+
+        Destination destinationInput = new Destination();
+        destinationInput.setDestinationName(" Zurich ");
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> tripService.addDestination(1L, 1L, destinationInput));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+        Mockito.verify(destinationRepository, Mockito.never()).save(Mockito.any());
+    }
+
+    @Test
     public void addDestination_nonParticipant_forbidden() {
         Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
         Mockito.when(tripMembershipRepository.existsByTripIdAndUserId(1L, 99L)).thenReturn(false);
