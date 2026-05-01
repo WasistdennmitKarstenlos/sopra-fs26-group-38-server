@@ -14,6 +14,7 @@ public class ActivitySearchResultDTO implements Serializable {
     private String photoUrl;
     private Double latitude;
     private Double longitude;
+    private Long createdBy;
     private long upvotes;
     private long downvotes;
     private long score;
@@ -81,6 +82,14 @@ public class ActivitySearchResultDTO implements Serializable {
 
     public void setLongitude(Double longitude) {
         this.longitude = longitude;
+    }
+
+    public Long getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(Long createdBy) {
+        this.createdBy = createdBy;
     }
 
     public long getUpvotes() {

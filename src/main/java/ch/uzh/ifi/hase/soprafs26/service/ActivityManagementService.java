@@ -1,22 +1,23 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
-import ch.uzh.ifi.hase.soprafs26.entity.Activity;
-import ch.uzh.ifi.hase.soprafs26.entity.Vote;
-import ch.uzh.ifi.hase.soprafs26.entity.VoteType;
-import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
-import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteRequestDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteResponseDTO;
-import ch.uzh.ifi.hase.soprafs26.event.DestinationVotesUpdatedEvent;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.Optional;
+import ch.uzh.ifi.hase.soprafs26.entity.Activity;
+import ch.uzh.ifi.hase.soprafs26.entity.Vote;
+import ch.uzh.ifi.hase.soprafs26.entity.VoteType;
+import ch.uzh.ifi.hase.soprafs26.event.DestinationVotesUpdatedEvent;
+import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteRequestDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteResponseDTO;
 
 @Service
 @Transactional
@@ -66,6 +67,7 @@ public class ActivityManagementService {
         activity.setPhotoUrl(activityInput.getPhotoUrl());
         activity.setLatitude(activityInput.getLatitude());
         activity.setLongitude(activityInput.getLongitude());
+        activity.setCreatedBy(userId);
 
         Activity saved = activityRepository.save(activity);
         eventPublisher.publishEvent(new DestinationVotesUpdatedEvent(this, tripId, userId));
@@ -99,6 +101,14 @@ public class ActivityManagementService {
 
         Activity activity = activityRepository.findByIdAndTripIdAndDestinationId(activityId, tripId, destinationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Activity not found"));
+
+        if (!activity.getCreatedBy().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the creator can delete this activity");
+        }
+
+        if (voteRepository.countByActivityIdAndVoteType(activity.getId(), VoteType.UP) > 0 ) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot delete activity with existing votes");
+        }
 
         activityRepository.delete(activity);
         eventPublisher.publishEvent(new DestinationVotesUpdatedEvent(this, tripId, userId));
