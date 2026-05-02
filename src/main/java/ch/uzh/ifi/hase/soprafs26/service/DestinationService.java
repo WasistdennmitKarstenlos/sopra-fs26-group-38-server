@@ -48,12 +48,25 @@ public class DestinationService {
         return destinationRepository.save(destination);
     }
 
-    public Destination updateDestination(Long tripId, Long destinationId, Destination destinationUpdate) {
+    public Destination updateDestination(Long tripId, Long destinationId, Destination destinationUpdate, Long requesterId) {
         tripService.ensureTripIsActiveForMutations(tripId);
         validate(destinationUpdate);
+
         Destination destination = getDestinationEntity(tripId, destinationId);
         ensureDestinationNameIsUniqueForUpdate(tripId, destinationUpdate.getDestinationName(), destinationId);
-        destination.setDestinationName(destinationUpdate.getDestinationName());
+
+        Long proposedBy = destination.getProposedByUserId();
+        if (proposedBy == null || !proposedBy.equals(requesterId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the creator can edit this destination");
+        }
+
+        // prevent editing if destination already has activities
+        boolean hasActivities = !activityRepository.findByTripIdAndDestinationIdOrderByIdDesc(tripId, destinationId).isEmpty();
+        if (hasActivities) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Destination already has activities and cannot be edited");
+        }
+
+        destination.setDestinationName(destinationUpdate.getDestinationName().trim());
         return destinationRepository.save(destination);
     }
 

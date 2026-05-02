@@ -28,6 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 public class DestinationControllerTest {
 
@@ -203,5 +204,52 @@ public class DestinationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-cache, no-transform"))
                 .andExpect(header().string("X-Accel-Buffering", "no"));
-    }
+        }
+
+        @Test
+        public void updateDestination_success() throws Exception {
+                User user = new User();
+                user.setId(1L);
+
+                DestinationPostDTO postDTO = new DestinationPostDTO();
+                postDTO.setDestinationName("Geneva");
+
+                Destination saved = new Destination();
+                saved.setId(11L);
+                saved.setTripId(1L);
+                saved.setDestinationName("Geneva");
+                saved.setProposedByUserId(1L);
+
+                Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+                Mockito.when(destinationService.updateDestination(Mockito.eq(1L), Mockito.eq(11L), Mockito.any(Destination.class), Mockito.eq(1L))).thenReturn(saved);
+                Mockito.when(tripService.getDestinations(1L, 1L)).thenReturn(List.of(saved));
+                Mockito.when(activityManagementService.getSelectedActivities(1L, 11L)).thenReturn(List.of());
+
+                mockMvc.perform(put("/trips/1/destinations/11")
+                                .header("Authorization", "Bearer token")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(new ObjectMapper().writeValueAsString(postDTO)))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.id").value(11))
+                        .andExpect(jsonPath("$.destinationName").value("Geneva"));
+        }
+
+        @Test
+        public void updateDestination_forbiddenWhenActivitiesExist() throws Exception {
+                User user = new User();
+                user.setId(1L);
+
+                DestinationPostDTO postDTO = new DestinationPostDTO();
+                postDTO.setDestinationName("Bern");
+
+                Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+                Mockito.when(destinationService.updateDestination(Mockito.eq(1L), Mockito.eq(11L), Mockito.any(Destination.class), Mockito.eq(1L)))
+                        .thenThrow(new org.springframework.web.server.ResponseStatusException(HttpStatus.CONFLICT, "Destination already has activities and cannot be edited"));
+
+                mockMvc.perform(put("/trips/1/destinations/11")
+                                .header("Authorization", "Bearer token")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(new ObjectMapper().writeValueAsString(postDTO)))
+                        .andExpect(status().isConflict());
+        }
 }
