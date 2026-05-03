@@ -129,7 +129,13 @@ public class DestinationController {
                                                @RequestHeader(value = "Authorization", required = false) String token) {
         User requester = userService.validateToken(token);
         Destination update = DTOMapper.INSTANCE.convertDestinationPostDTOtoEntity(destinationPostDTO);
-        Destination saved = destinationService.updateDestination(tripId, destinationId, update);
+        Destination saved = destinationService.updateDestination(tripId, destinationId, update, requester.getId());
+
+        if (destinationRealtimeService != null) {
+            List<DestinationGetDTO> sharedList = buildSharedDestinationList(tripId, requester.getId());
+            destinationRealtimeService.publish(tripId, sharedList);
+        }
+
         DestinationGetDTO dto = DTOMapper.INSTANCE.convertEntityToDestinationGetDTO(saved);
         dto.setActivities(buildActivities(tripId, saved.getId(), requester.getId()));
         destinationService.populateDestinationVoteData(saved, requester.getId(), dto);

@@ -82,7 +82,7 @@ public class DestinationServiceTest {
         Mockito.doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "read-only"))
                 .when(tripService).ensureTripIsActiveForMutations(1L);
 
-        assertThrows(ResponseStatusException.class, () -> destinationService.updateDestination(1L, 11L, update));
+        assertThrows(ResponseStatusException.class, () -> destinationService.updateDestination(1L, 11L, update, 1L));
         Mockito.verifyNoInteractions(destinationRepository);
     }
 
@@ -100,6 +100,7 @@ public class DestinationServiceTest {
         Destination existing = new Destination();
         existing.setId(11L);
         existing.setTripId(1L);
+        existing.setProposedByUserId(1L);
         existing.setDestinationName("Old Name");
 
         Destination update = new Destination();
@@ -108,7 +109,7 @@ public class DestinationServiceTest {
         Mockito.when(destinationRepository.findByIdAndTripId(11L, 1L)).thenReturn(Optional.of(existing));
         Mockito.when(destinationRepository.save(Mockito.any(Destination.class))).thenReturn(existing);
 
-        destinationService.updateDestination(1L, 11L, update);
+        destinationService.updateDestination(1L, 11L, update, 1L);
 
         Mockito.verify(destinationRepository, Mockito.times(1)).save(existing);
     }
@@ -129,7 +130,7 @@ public class DestinationServiceTest {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> destinationService.updateDestination(1L, 11L, update));
+                () -> destinationService.updateDestination(1L, 11L, update, 1L));
 
         assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
         Mockito.verify(destinationRepository, Mockito.never()).save(Mockito.any());
