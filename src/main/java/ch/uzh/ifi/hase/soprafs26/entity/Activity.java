@@ -1,5 +1,7 @@
 package ch.uzh.ifi.hase.soprafs26.entity;
 
+import java.io.Serializable;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -7,8 +9,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-
-import java.io.Serializable;
 
 @Entity
 @Table(name = "ACTIVITY", uniqueConstraints = {
@@ -48,6 +48,9 @@ public class Activity implements Serializable {
 
     @Column
     private Double longitude;
+
+    @Column(nullable = false)
+    private Long createdBy;
 
     public Long getId() {
         return id;
@@ -127,5 +130,13 @@ public class Activity implements Serializable {
 
     public void setLongitude(Double longitude) {
         this.longitude = longitude;
+    }
+
+    public Long getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(Long createdBy) {
+        this.createdBy = createdBy;
     }
 }

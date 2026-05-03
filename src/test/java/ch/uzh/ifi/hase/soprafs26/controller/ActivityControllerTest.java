@@ -1,5 +1,23 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.server.ResponseStatusException;
+
 import ch.uzh.ifi.hase.soprafs26.entity.Activity;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityPostDTO;
@@ -7,23 +25,7 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
 import ch.uzh.ifi.hase.soprafs26.service.ActivitySearchService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import tools.jackson.databind.ObjectMapper;
-
-import java.util.List;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class ActivityControllerTest {
 
@@ -178,6 +180,72 @@ public class ActivityControllerTest {
                             .header("Authorization", "Bearer token")
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isNoContent());
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    // #222
+    @Test
+    public void deleteActivity_notCreator_returns403() {
+        User user = new User();
+        user.setId(1L);
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the creator can delete this activity"))
+                .when(activityManagementService).deleteActivity(1L, 2L, 10L, 1L);
+
+        try {
+            mockMvc.perform(delete("/trips/1/destinations/2/activities/10")
+                            .header("Authorization", "Bearer token")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isForbidden());
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    // #223
+    @Test
+    public void deleteActivity_hasUpvotes_returns400() {
+        User user = new User();
+        user.setId(1L);
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot delete activity with existing votes"))
+                .when(activityManagementService).deleteActivity(1L, 2L, 10L, 1L);
+
+        try {
+            mockMvc.perform(delete("/trips/1/destinations/2/activities/10")
+                            .header("Authorization", "Bearer token")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest());
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    // #122
+    @Test
+    public void getSavedActivities_includesCreatedBy_inResponse() {
+        User user = new User();
+        user.setId(1L);
+
+        Activity activity = new Activity();
+        activity.setId(10L);
+        activity.setPlaceId("place-1");
+        activity.setName("Museum");
+        activity.setCreatedBy(42L);
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.when(activityManagementService.getSelectedActivities(1L, 2L)).thenReturn(List.of(activity));
+
+        try {
+            mockMvc.perform(get("/trips/1/destinations/2/activities")
+                            .header("Authorization", "Bearer token")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].createdBy").value(42));
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }

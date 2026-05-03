@@ -1,18 +1,10 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
-import ch.uzh.ifi.hase.soprafs26.entity.Activity;
-import ch.uzh.ifi.hase.soprafs26.entity.Destination;
-import ch.uzh.ifi.hase.soprafs26.entity.User;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
-import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
-import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
-import ch.uzh.ifi.hase.soprafs26.service.DestinationService;
-import ch.uzh.ifi.hase.soprafs26.service.TripService;
-import ch.uzh.ifi.hase.soprafs26.service.UserService;
-import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,13 +17,22 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import org.springframework.context.event.EventListener;
+
+import ch.uzh.ifi.hase.soprafs26.entity.Activity;
+import ch.uzh.ifi.hase.soprafs26.entity.Destination;
+import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.event.DestinationVotesUpdatedEvent;
 import ch.uzh.ifi.hase.soprafs26.event.TripStatusUpdatedEvent;
-
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
+import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
+import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
+import ch.uzh.ifi.hase.soprafs26.service.DestinationService;
+import ch.uzh.ifi.hase.soprafs26.service.TripService;
+import ch.uzh.ifi.hase.soprafs26.service.UserService;
+import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
 public class DestinationController {
@@ -175,6 +176,7 @@ public class DestinationController {
         resultDTO.setPhotoUrl(activity.getPhotoUrl());
         resultDTO.setLatitude(activity.getLatitude());
         resultDTO.setLongitude(activity.getLongitude());
+        resultDTO.setCreatedBy(activity.getCreatedBy());
         
         // Populate vote data if user is authenticated
         if (userId != null) {

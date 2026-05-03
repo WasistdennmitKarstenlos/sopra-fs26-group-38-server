@@ -1,23 +1,25 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
-import ch.uzh.ifi.hase.soprafs26.entity.Activity;
-import ch.uzh.ifi.hase.soprafs26.entity.Destination;
-import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
-import org.springframework.context.ApplicationEventPublisher;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import ch.uzh.ifi.hase.soprafs26.entity.Activity;
+import ch.uzh.ifi.hase.soprafs26.entity.Destination;
+import ch.uzh.ifi.hase.soprafs26.entity.VoteType;
+import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
 
 public class ActivityManagementServiceTest {
 
@@ -29,6 +31,9 @@ public class ActivityManagementServiceTest {
 
     @Mock
     private TripService tripService;
+
+    @Mock
+    private VoteRepository voteRepository;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
@@ -147,6 +152,29 @@ public class ActivityManagementServiceTest {
         existing.setId(10L);
         existing.setTripId(1L);
         existing.setDestinationId(2L);
+        existing.setCreatedBy(100L);
+
+        Destination destination = new Destination();
+        destination.setId(2L);
+        destination.setTripId(1L);
+
+        Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(destination);
+        Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(10L, 1L, 2L)).thenReturn(Optional.of(existing));
+        Mockito.when(voteRepository.countByActivityIdAndVoteType(10L, VoteType.UP)).thenReturn(0L);
+        Mockito.when(voteRepository.countByActivityIdAndVoteType(10L, VoteType.DOWN)).thenReturn(0L);
+
+        activityManagementService.deleteActivity(1L, 2L, 10L, 100L);
+
+        Mockito.verify(activityRepository, Mockito.times(1)).delete(existing);
+    }
+
+    @Test
+    public void deleteActivity_nonCreator_forbidden() {
+        Activity existing = new Activity();
+        existing.setId(10L);
+        existing.setTripId(1L);
+        existing.setDestinationId(2L);
+        existing.setCreatedBy(111L);
 
         Destination destination = new Destination();
         destination.setId(2L);
@@ -155,9 +183,34 @@ public class ActivityManagementServiceTest {
         Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(destination);
         Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(10L, 1L, 2L)).thenReturn(Optional.of(existing));
 
-        activityManagementService.deleteActivity(1L, 2L, 10L, 100L);
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> activityManagementService.deleteActivity(1L, 2L, 10L, 100L));
 
-        Mockito.verify(activityRepository, Mockito.times(1)).delete(existing);
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+        Mockito.verify(activityRepository, Mockito.never()).delete(Mockito.any(Activity.class));
+    }
+
+    @Test
+    public void deleteActivity_withUpvotes_badRequest() {
+        Activity existing = new Activity();
+        existing.setId(10L);
+        existing.setTripId(1L);
+        existing.setDestinationId(2L);
+        existing.setCreatedBy(100L);
+
+        Destination destination = new Destination();
+        destination.setId(2L);
+        destination.setTripId(1L);
+
+        Mockito.when(destinationService.getDestinationEntity(1L, 2L)).thenReturn(destination);
+        Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(10L, 1L, 2L)).thenReturn(Optional.of(existing));
+        Mockito.when(voteRepository.countByActivityIdAndVoteType(10L, VoteType.UP)).thenReturn(1L);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> activityManagementService.deleteActivity(1L, 2L, 10L, 100L));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        Mockito.verify(activityRepository, Mockito.never()).delete(Mockito.any(Activity.class));
     }
 
     @Test

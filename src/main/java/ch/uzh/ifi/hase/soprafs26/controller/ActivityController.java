@@ -1,5 +1,20 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
 import ch.uzh.ifi.hase.soprafs26.entity.Activity;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityPostDTO;
@@ -9,20 +24,6 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteResponseDTO;
 import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
 import ch.uzh.ifi.hase.soprafs26.service.ActivitySearchService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.DeleteMapping;
-
-import java.util.List;
 
 @RestController
 public class ActivityController {
@@ -148,6 +149,7 @@ public class ActivityController {
         resultDTO.setPhotoUrl(activity.getPhotoUrl());
         resultDTO.setLatitude(activity.getLatitude());
         resultDTO.setLongitude(activity.getLongitude());
+        resultDTO.setCreatedBy(activity.getCreatedBy());
         
         // Populate vote data if user is authenticated
         if (userId != null) {
