@@ -1,6 +1,7 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,12 +18,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Activity;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.entity.Comment;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteRequestDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteResponseDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.CommentGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.CommentPostDTO;
 import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
 import ch.uzh.ifi.hase.soprafs26.service.ActivitySearchService;
+import ch.uzh.ifi.hase.soprafs26.service.CommentService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
 @RestController
@@ -30,13 +35,16 @@ public class ActivityController {
 
     private final ActivitySearchService activitySearchService;
     private final ActivityManagementService activityManagementService;
+    private final CommentService commentService;
     private final UserService userService;
 
     public ActivityController(ActivitySearchService activitySearchService,
                               ActivityManagementService activityManagementService,
+                              CommentService commentService,
                               UserService userService) {
         this.activitySearchService = activitySearchService;
         this.activityManagementService = activityManagementService;
+        this.commentService = commentService;
         this.userService = userService;
     }
 
@@ -91,6 +99,31 @@ public class ActivityController {
                                                 @RequestHeader(value = "Authorization", required = false) String token) {
         var requester = userService.validateToken(token);
         return activityManagementService.voteOnActivity(activityId, requester.getId(), voteRequest);
+    }
+
+    @GetMapping("/trips/{tripId}/destinations/{destinationId}/activities/{activityId}/comments")
+    @ResponseStatus(HttpStatus.OK)
+    public List<CommentGetDTO> getComments(@PathVariable("tripId") Long tripId,
+                                           @PathVariable("destinationId") Long destinationId,
+                                           @PathVariable("activityId") Long activityId,
+                                           @RequestHeader(value = "Authorization", required = false) String token) {
+        User requester = userService.validateToken(token);
+        return commentService.getComments(tripId, destinationId, activityId, requester.getId()).stream()
+                .map(comment -> toCommentGetDTO(comment))
+                .collect(Collectors.toList());
+    }
+
+    @PostMapping("/trips/{tripId}/destinations/{destinationId}/activities/{activityId}/comments")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CommentGetDTO addComment(@PathVariable("tripId") Long tripId,
+                                    @PathVariable("destinationId") Long destinationId,
+                                    @PathVariable("activityId") Long activityId,
+                                    @RequestBody CommentPostDTO commentPostDTO,
+                                    @RequestHeader(value = "Authorization", required = false) String token) {
+        User requester = userService.validateToken(token);
+        Comment saved = commentService.addComment(tripId, destinationId, activityId, requester.getId(),
+                commentPostDTO != null ? commentPostDTO.getContent() : null);
+        return toCommentGetDTO(saved);
     }
 
     @DeleteMapping("/trips/{tripId}/destinations/{destinationId}/activities/{activityId}")
@@ -157,5 +190,19 @@ public class ActivityController {
         }
         
         return resultDTO;
+    }
+
+    private CommentGetDTO toCommentGetDTO(Comment comment) {
+        CommentGetDTO dto = new CommentGetDTO();
+        dto.setId(comment.getId());
+        dto.setTripId(comment.getTripId());
+        dto.setDestinationId(comment.getDestinationId());
+        dto.setActivityId(comment.getActivityId());
+        dto.setUserId(comment.getUserId());
+        dto.setContent(comment.getContent());
+        dto.setCreatedAt(comment.getCreatedAt());
+        User commenter = userService.getUserById(comment.getUserId());
+        dto.setUsername(commenter.getUsername());
+        return dto;
     }
 }
