@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "COMMENT")
+@Table(name = "COMMENTS")
 public class Comment implements Serializable {
 
     private static final long serialVersionUID = 1L;
