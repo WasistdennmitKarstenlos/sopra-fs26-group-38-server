@@ -67,7 +67,12 @@ public class CommentServiceTest {
 
     @Test
     public void addComment_emptyContent_throwsBadRequest() {
-        Mockito.when(tripService.getTripForParticipant(1L, 100L)).thenReturn(new Trip());
+        Trip trip = new Trip();
+        Activity activity = new Activity();
+        activity.setId(10L);
+
+        Mockito.when(tripService.getTripForParticipant(1L, 100L)).thenReturn(trip);
+        Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(10L, 1L, 2L)).thenReturn(Optional.of(activity));
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> commentService.addComment(1L, 2L, 10L, 100L, "   "));
@@ -77,7 +82,12 @@ public class CommentServiceTest {
 
     @Test
     public void addComment_tooLong_throwsBadRequest() {
-        Mockito.when(tripService.getTripForParticipant(1L, 100L)).thenReturn(new Trip());
+        Trip trip = new Trip();
+        Activity activity = new Activity();
+        activity.setId(10L);
+
+        Mockito.when(tripService.getTripForParticipant(1L, 100L)).thenReturn(trip);
+        Mockito.when(activityRepository.findByIdAndTripIdAndDestinationId(10L, 1L, 2L)).thenReturn(Optional.of(activity));
 
         String longComment = "a".repeat(281);
 
