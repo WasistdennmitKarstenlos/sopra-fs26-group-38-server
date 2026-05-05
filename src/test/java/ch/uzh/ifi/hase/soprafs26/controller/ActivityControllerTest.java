@@ -19,11 +19,14 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Activity;
+import ch.uzh.ifi.hase.soprafs26.entity.Comment;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.CommentPostDTO;
 import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
 import ch.uzh.ifi.hase.soprafs26.service.ActivitySearchService;
+import ch.uzh.ifi.hase.soprafs26.service.CommentService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 import tools.jackson.databind.ObjectMapper;
 
@@ -36,6 +39,9 @@ public class ActivityControllerTest {
     private ActivityManagementService activityManagementService;
 
     @Mock
+    private CommentService commentService;
+
+    @Mock
     private UserService userService;
 
     private ActivityController activityController;
@@ -45,7 +51,7 @@ public class ActivityControllerTest {
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
-        activityController = new ActivityController(activitySearchService, activityManagementService, userService);
+        activityController = new ActivityController(activitySearchService, activityManagementService, commentService, userService);
         mockMvc = MockMvcBuilders.standaloneSetup(activityController).build();
     }
 
@@ -219,6 +225,98 @@ public class ActivityControllerTest {
             mockMvc.perform(delete("/trips/1/destinations/2/activities/10")
                             .header("Authorization", "Bearer token")
                             .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest());
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    @Test
+    public void addComment_validPayload_success() {
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("alice");
+
+        CommentPostDTO postDTO = new CommentPostDTO();
+        postDTO.setContent("Looks amazing");
+
+        Comment saved = new Comment();
+        saved.setId(99L);
+        saved.setTripId(1L);
+        saved.setDestinationId(2L);
+        saved.setActivityId(10L);
+        saved.setUserId(1L);
+        saved.setContent("Looks amazing");
+        saved.setCreatedAt(java.time.LocalDateTime.of(2026, 5, 3, 12, 0));
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.when(commentService.addComment(1L, 2L, 10L, 1L, "Looks amazing")).thenReturn(saved);
+        Mockito.when(userService.getUserById(1L)).thenReturn(user);
+
+        try {
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/trips/1/destinations/2/activities/10/comments")
+                            .header("Authorization", "Bearer token")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(new ObjectMapper().writeValueAsString(postDTO)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.id").value(99))
+                    .andExpect(jsonPath("$.userId").value(1))
+                    .andExpect(jsonPath("$.username").value("alice"))
+                    .andExpect(jsonPath("$.content").value("Looks amazing"));
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    @Test
+    public void getComments_success() {
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("alice");
+
+        Comment first = new Comment();
+        first.setId(1L);
+        first.setTripId(1L);
+        first.setDestinationId(2L);
+        first.setActivityId(10L);
+        first.setUserId(1L);
+        first.setContent("First comment");
+        first.setCreatedAt(java.time.LocalDateTime.of(2026, 5, 3, 11, 30));
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.when(commentService.getComments(1L, 2L, 10L, 1L)).thenReturn(List.of(first));
+        Mockito.when(userService.getUserById(1L)).thenReturn(user);
+
+        try {
+            mockMvc.perform(get("/trips/1/destinations/2/activities/10/comments")
+                            .header("Authorization", "Bearer token")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].id").value(1))
+                    .andExpect(jsonPath("$[0].username").value("alice"))
+                    .andExpect(jsonPath("$[0].content").value("First comment"));
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    @Test
+    public void addComment_emptyContent_returns400() {
+        User user = new User();
+        user.setId(1L);
+
+        CommentPostDTO postDTO = new CommentPostDTO();
+        postDTO.setContent("   ");
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.when(commentService.addComment(1L, 2L, 10L, 1L, "   "))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Comment content cannot be empty"));
+
+        try {
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/trips/1/destinations/2/activities/10/comments")
+                            .header("Authorization", "Bearer token")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(new ObjectMapper().writeValueAsString(postDTO)))
                     .andExpect(status().isBadRequest());
         } catch (Exception exception) {
             throw new RuntimeException(exception);
