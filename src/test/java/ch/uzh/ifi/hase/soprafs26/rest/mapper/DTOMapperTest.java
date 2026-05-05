@@ -1,19 +1,18 @@
 package ch.uzh.ifi.hase.soprafs26.rest.mapper;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.Destination;
-import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
+import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * DTOMapperTest
@@ -35,9 +34,19 @@ public class DTOMapperTest {
 	}
 
 	@Test
+	public void testCreateUser_fromUserPostDTO_toUser_withNullUsername() {
+		UserPostDTO userPostDTO = new UserPostDTO();
+
+		User user = DTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO);
+
+		assertEquals(null, user.getUsername());
+	}
+
+	@Test
 	public void testGetUser_fromUser_toUserGetDTO_success() {
 		// create User
 		User user = new User();
+		user.setId(1L);
 		user.setUsername("firstname@lastname");
 		user.setStatus(UserStatus.OFFLINE);
 		user.setToken("1");
