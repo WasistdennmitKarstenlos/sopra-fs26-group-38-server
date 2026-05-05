@@ -11,5 +11,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     List<Comment> findByTripIdAndDestinationIdAndActivityIdOrderByCreatedAtAsc(Long tripId, Long destinationId, Long activityId);
 
+    List<Comment> findByTripIdOrderByCreatedAtAsc(Long tripId);
+
     List<Comment> findByActivityIdOrderByCreatedAtAsc(Long activityId);
 }

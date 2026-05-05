@@ -58,6 +58,11 @@ public class CommentService {
         return commentRepository.findByTripIdAndDestinationIdAndActivityIdOrderByCreatedAtAsc(tripId, destinationId, activityId);
     }
 
+    public List<Comment> getCommentsForTrip(Long tripId, Long userId) {
+        tripService.getTripForParticipant(tripId, userId);
+        return commentRepository.findByTripIdOrderByCreatedAtAsc(tripId);
+    }
+
     private String validateAndNormalizeContent(String content) {
         if (content == null || content.trim().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Comment content cannot be empty");
