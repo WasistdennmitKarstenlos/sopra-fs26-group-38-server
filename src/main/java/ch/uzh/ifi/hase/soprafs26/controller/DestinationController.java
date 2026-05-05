@@ -93,7 +93,7 @@ public class DestinationController {
      */
     @GetMapping(value = "/trips/{tripId}/destinations/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter streamDestinations(
-            @PathVariable Long tripId,
+            @PathVariable("tripId") Long tripId,
             @RequestHeader(value = "Authorization", required = false) String token,
             HttpServletResponse response) {
         User requester = userService.validateToken(token);
