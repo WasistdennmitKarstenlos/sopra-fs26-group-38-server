@@ -113,6 +113,16 @@ public class ActivityController {
                 .collect(Collectors.toList());
     }
 
+        @GetMapping("/trips/{tripId}/comments")
+        @ResponseStatus(HttpStatus.OK)
+        public List<CommentGetDTO> getTripComments(@PathVariable("tripId") Long tripId,
+                               @RequestHeader(value = "Authorization", required = false) String token) {
+        User requester = userService.validateToken(token);
+        return commentService.getCommentsForTrip(tripId, requester.getId()).stream()
+            .map(comment -> toCommentGetDTO(comment))
+            .collect(Collectors.toList());
+        }
+
     @PostMapping("/trips/{tripId}/destinations/{destinationId}/activities/{activityId}/comments")
     @ResponseStatus(HttpStatus.CREATED)
     public CommentGetDTO addComment(@PathVariable("tripId") Long tripId,
