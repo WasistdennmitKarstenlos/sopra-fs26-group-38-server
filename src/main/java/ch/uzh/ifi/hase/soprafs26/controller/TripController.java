@@ -22,11 +22,13 @@ import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.InviteDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.JoinTripRequestDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.JoinTripResponseDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.FinalReportGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripParticipantDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
+import ch.uzh.ifi.hase.soprafs26.service.FinalReportService;
 import ch.uzh.ifi.hase.soprafs26.service.TripService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
@@ -42,14 +44,17 @@ public class TripController {
     private final TripService tripService;
     private final UserService userService;
     private final DestinationRealtimeService destinationRealtimeService;
+    private final FinalReportService finalReportService;
 
     public TripController(
             TripService tripService,
             UserService userService,
-            DestinationRealtimeService destinationRealtimeService) {
+            DestinationRealtimeService destinationRealtimeService,
+            FinalReportService finalReportService) {
         this.tripService = tripService;
         this.userService = userService;
         this.destinationRealtimeService = destinationRealtimeService;
+        this.finalReportService = finalReportService;
     }
 
     /**
@@ -261,6 +266,21 @@ public class TripController {
         User authenticatedUser = userService.validateToken(token);
         Trip updatedTrip = tripService.setFinalDestination(tripId, finalDestinationId);
         return toTripGetDTOForUser(updatedTrip, authenticatedUser.getId());
+    }
+
+    /**
+     * Fetch the compact final report for a finalized trip.
+     * Access is limited to authenticated participants of the trip.
+     * @param token Authorization header containing Bearer token
+     * @param tripId the ID of the trip
+     * @return compact final report data
+     */
+    @GetMapping("/{tripId}/final-report")
+    @ResponseStatus(HttpStatus.OK)
+    public FinalReportGetDTO getFinalReport(@RequestHeader(value = "Authorization", required = false) String token,
+                                            @PathVariable("tripId") Long tripId) {
+        User authenticatedUser = userService.validateToken(token);
+        return finalReportService.getFinalReport(tripId, authenticatedUser.getId());
     }
 
     private TripGetDTO toTripGetDTOForUser(Trip trip, Long userId) {
