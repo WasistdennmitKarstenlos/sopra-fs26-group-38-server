@@ -70,9 +70,22 @@ public class DestinationService {
         return destinationRepository.save(destination);
     }
 
-    public void deleteDestination(Long tripId, Long destinationId) {
+    public void deleteDestination(Long tripId, Long destinationId, Long requesterId) {
         tripService.ensureTripIsActiveForMutations(tripId);
         Destination destination = getDestinationEntity(tripId, destinationId);
+
+        // Validation 1: Only creator can delete
+        Long proposedBy = destination.getProposedByUserId();
+        if (proposedBy == null || !proposedBy.equals(requesterId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the creator can delete this destination");
+        }
+
+        // Validation 2: Destination must not have activities
+        List<Activity> activities = activityRepository.findByTripIdAndDestinationIdOrderByIdDesc(tripId, destinationId);
+        if (!activities.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Destination has associated activities and cannot be deleted");
+        }
+
         destinationRepository.delete(destination);
     }
 
