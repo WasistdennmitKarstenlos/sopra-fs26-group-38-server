@@ -218,24 +218,24 @@ public class TripService {
         }
 
         Trip trip = getTripById(tripId);
-        return enterFinalEvaluation(tripId, trip.getHostId());
+        return startFinalizeTrip(tripId, trip.getHostId());
     }
 
     /**
-     * Enter final evaluation mode for a trip.
+     * Enter finalize trip mode for a trip.
      * This transition is host-only and allowed only if the trip has at least one destination,
      * is not already in EVALUATION, and is not FINALIZED.
      * @param tripId target trip id
      * @param actorUserId authenticated caller id
      * @return updated trip in EVALUATION mode
      */
-    public Trip enterFinalEvaluation(Long tripId, Long actorUserId) {
-        log.debug("User {} requested final evaluation for trip {}", actorUserId, tripId);
+    public Trip startFinalizeTrip(Long tripId, Long actorUserId) {
+        log.debug("User {} requested finalize trip mode for trip {}", actorUserId, tripId);
 
         Trip trip = getTripById(tripId);
 
         if (!trip.getHostId().equals(actorUserId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can enter final evaluation mode");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can finalize the trip");
         }
 
         if (!destinationRepository.existsByTripId(tripId)) {
@@ -291,13 +291,13 @@ public class TripService {
     }
 
     /**
-     * Returns whether the caller may enter final evaluation right now.
+     * Returns whether the caller may finalize the trip right now.
      * This is intended for UI state in trip responses.
      * @param trip trip entity
      * @param actorUserId authenticated caller id
-     * @return true if final evaluation can be entered
+     * @return true if finalize trip can be started
      */
-    public boolean canEnterFinalEvaluation(Trip trip, Long actorUserId) {
+    public boolean canFinalizeTrip(Trip trip, Long actorUserId) {
         if (trip == null || actorUserId == null) {
             return false;
         }
