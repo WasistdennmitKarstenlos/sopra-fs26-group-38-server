@@ -91,7 +91,7 @@ public class DestinationServiceTest {
         Mockito.doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "read-only"))
                 .when(tripService).ensureTripIsActiveForMutations(1L);
 
-        assertThrows(ResponseStatusException.class, () -> destinationService.deleteDestination(1L, 11L));
+        assertThrows(ResponseStatusException.class, () -> destinationService.deleteDestination(1L, 11L, 1L));
         Mockito.verifyNoInteractions(destinationRepository);
     }
 
@@ -188,5 +188,63 @@ public class DestinationServiceTest {
         assertEquals(1L, dto.getDownvotes());
         assertEquals(1L, dto.getScore());
         assertNull(dto.getUserVote());
+    }
+
+    @Test
+    public void deleteDestination_success() {
+        Destination existing = new Destination();
+        existing.setId(11L);
+        existing.setTripId(1L);
+        existing.setProposedByUserId(1L);
+        existing.setDestinationName("Paris");
+
+        Mockito.when(destinationRepository.findByIdAndTripId(11L, 1L)).thenReturn(Optional.of(existing));
+        Mockito.when(activityRepository.findByTripIdAndDestinationIdOrderByIdDesc(1L, 11L))
+                .thenReturn(List.of());
+
+        destinationService.deleteDestination(1L, 11L, 1L);
+
+        Mockito.verify(destinationRepository, Mockito.times(1)).delete(existing);
+    }
+
+    @Test
+    public void deleteDestination_forbidden_notCreator() {
+        Destination existing = new Destination();
+        existing.setId(11L);
+        existing.setTripId(1L);
+        existing.setProposedByUserId(1L);
+        existing.setDestinationName("Paris");
+
+        Mockito.when(destinationRepository.findByIdAndTripId(11L, 1L)).thenReturn(Optional.of(existing));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> destinationService.deleteDestination(1L, 11L, 2L));
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+        Mockito.verify(destinationRepository, Mockito.never()).delete(Mockito.any());
+    }
+
+    @Test
+    public void deleteDestination_conflict_hasActivities() {
+        Destination existing = new Destination();
+        existing.setId(11L);
+        existing.setTripId(1L);
+        existing.setProposedByUserId(1L);
+        existing.setDestinationName("Paris");
+
+        Activity activity = new Activity();
+        activity.setId(100L);
+
+        Mockito.when(destinationRepository.findByIdAndTripId(11L, 1L)).thenReturn(Optional.of(existing));
+        Mockito.when(activityRepository.findByTripIdAndDestinationIdOrderByIdDesc(1L, 11L))
+                .thenReturn(List.of(activity));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> destinationService.deleteDestination(1L, 11L, 1L));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+        Mockito.verify(destinationRepository, Mockito.never()).delete(Mockito.any());
     }
 }

@@ -354,7 +354,7 @@ public class DestinationControllerTest {
                         .header("Authorization", "Bearer token"))
                 .andExpect(status().isNoContent());
 
-        verify(destinationService).deleteDestination(1L, 11L);
+        verify(destinationService).deleteDestination(1L, 11L, 1L);
     }
 
     @Test

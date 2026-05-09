@@ -147,8 +147,14 @@ public class DestinationController {
     public void deleteDestination(@PathVariable("tripId") Long tripId,
                                   @PathVariable("destinationId") Long destinationId,
                                   @RequestHeader(value = "Authorization", required = false) String token) {
-        userService.validateToken(token);
-        destinationService.deleteDestination(tripId, destinationId);
+        User requester = userService.validateToken(token);
+        destinationService.deleteDestination(tripId, destinationId, requester.getId());
+
+        // Real-time update to all clients
+        if (destinationRealtimeService != null) {
+            List<DestinationGetDTO> sharedList = buildSharedDestinationList(tripId, requester.getId());
+            destinationRealtimeService.publish(tripId, sharedList);
+        }
     }
 
     private List<DestinationGetDTO> buildSharedDestinationList(Long tripId, Long requesterId) {
