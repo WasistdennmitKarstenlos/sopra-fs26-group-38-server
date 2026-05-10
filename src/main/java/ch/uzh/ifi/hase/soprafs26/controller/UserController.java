@@ -10,7 +10,6 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.UserRegisterDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
-import java.util.ArrayList;
 import java.util.List;
 
 // Testing sonarcloud Server
@@ -58,6 +57,36 @@ public class UserController {
 			@RequestHeader(value = "Authorization", required = false) String token) {
 		userService.logoutUser(token);
 	}
+
+		/**
+		 * GET /users
+		 * Returns all registered users for authenticated clients.
+		 */
+		@GetMapping("/users")
+		@ResponseStatus(HttpStatus.OK)
+		@ResponseBody
+		public List<UserGetDTO> getUsers(
+				@RequestHeader(value = "Authorization", required = false) String token) {
+			userService.validateToken(token);
+			return userService.getUsers().stream()
+					.map(DTOMapper.INSTANCE::convertEntityToUserGetDTO)
+					.toList();
+		}
+
+		/**
+		 * GET /users/{userId}
+		 * Returns a single user profile for authenticated clients.
+		 */
+		@GetMapping("/users/{userId}")
+		@ResponseStatus(HttpStatus.OK)
+		@ResponseBody
+		public UserGetDTO getUserById(
+				@PathVariable Long userId,
+				@RequestHeader(value = "Authorization", required = false) String token) {
+			userService.validateToken(token);
+			User user = userService.getUserById(userId);
+			return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
+		}
     
 	// Frontend register page send info here 
 	@PostMapping("/users/register")
