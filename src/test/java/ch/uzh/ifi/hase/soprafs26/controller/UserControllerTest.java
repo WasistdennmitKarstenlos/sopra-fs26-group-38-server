@@ -1,5 +1,6 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import org.junit.jupiter.api.Test;
 import static org.mockito.BDDMockito.given;
@@ -10,10 +11,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import org.springframework.web.server.ResponseStatusException;
+import java.util.Collections;
 
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
@@ -33,6 +36,45 @@ public class UserControllerTest {
 
 	@MockitoBean
 	private UserService userService;
+
+	@Test
+	public void getUsers_successful() throws Exception {
+		User user = new User();
+		user.setId(1L);
+		user.setUsername("testUsername");
+		user.setBio("Test bio");
+		user.setStatus(UserStatus.ONLINE);
+
+		given(userService.validateToken("Bearer testToken")).willReturn(user);
+		given(userService.getUsers()).willReturn(Collections.singletonList(user));
+
+		mockMvc.perform(get("/users").header("Authorization", "Bearer testToken"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$", hasSize(1)))
+				.andExpect(jsonPath("$[0].id", is(user.getId().intValue())))
+				.andExpect(jsonPath("$[0].username", is(user.getUsername())))
+				.andExpect(jsonPath("$[0].bio", is(user.getBio())))
+				.andExpect(jsonPath("$[0].status", is(user.getStatus().toString())));
+	}
+
+	@Test
+	public void getUserById_successful() throws Exception {
+		User user = new User();
+		user.setId(1L);
+		user.setUsername("testUsername");
+		user.setBio("Test bio");
+		user.setStatus(UserStatus.ONLINE);
+
+		given(userService.validateToken("Bearer testToken")).willReturn(user);
+		given(userService.getUserById(1L)).willReturn(user);
+
+		mockMvc.perform(get("/users/1").header("Authorization", "Bearer testToken"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id", is(user.getId().intValue())))
+				.andExpect(jsonPath("$.username", is(user.getUsername())))
+				.andExpect(jsonPath("$.bio", is(user.getBio())))
+				.andExpect(jsonPath("$.status", is(user.getStatus().toString())));
+	}
 
 	@Test
 	public void loginUser_successful() throws Exception {
