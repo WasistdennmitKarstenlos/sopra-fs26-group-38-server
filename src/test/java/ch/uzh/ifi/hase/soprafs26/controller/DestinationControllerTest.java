@@ -22,6 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -229,6 +230,22 @@ public class DestinationControllerTest {
         assertEquals("no-cache, no-transform", response.getHeader("Cache-Control"));
         assertEquals("no", response.getHeader("X-Accel-Buffering"));
     }
+
+        @Test
+        public void streamDestinations_httpEndpoint_success() throws Exception {
+                User user = new User();
+                user.setId(1L);
+
+                Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+                Mockito.when(tripService.getDestinations(1L, 1L)).thenReturn(List.of());
+                Mockito.when(destinationRealtimeService.subscribe(1L)).thenReturn(new SseEmitter(0L));
+
+                mockMvc.perform(get("/trips/1/destinations/stream")
+                                                .header("Authorization", "Bearer token"))
+                                .andExpect(status().isOk())
+                                .andExpect(header().string("Cache-Control", "no-cache, no-transform"))
+                                .andExpect(header().string("X-Accel-Buffering", "no"));
+        }
 
     @Test
     public void updateDestination_success() throws Exception {

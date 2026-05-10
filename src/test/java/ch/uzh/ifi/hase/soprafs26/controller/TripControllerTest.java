@@ -27,7 +27,6 @@ import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.entity.TripMembership;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.FinalReportGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.JoinTripRequestDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.TripPostDTO;
 import ch.uzh.ifi.hase.soprafs26.service.DestinationRealtimeService;
@@ -52,9 +51,11 @@ public class TripControllerTest {
     private TripService tripService;
 
     @MockitoBean
+        @SuppressWarnings("unused")
     private DestinationRealtimeService destinationRealtimeService;
 
         @MockitoBean
+        @SuppressWarnings("unused")
         private FinalReportService finalReportService;
   
     @MockitoBean
@@ -130,6 +131,30 @@ public class TripControllerTest {
                 .andExpect(jsonPath("$.evaluationMode", is(false)))
                 .andExpect(jsonPath("$.finalized", is(false)))
                 .andExpect(jsonPath("$.canEnterFinalEvaluation", is(true)));
+    }
+
+    @Test
+    public void getTripByRoomCode_validCode_success() throws Exception {
+        Trip trip = new Trip();
+        trip.setId(1L);
+        trip.setName("Paris Vacation");
+        trip.setRoomCode("ABC123");
+        trip.setHostId(1L);
+        trip.setStatus(Trip.TripStatus.ACTIVE);
+
+        given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
+        given(tripService.getTripByRoomCode("ABC123")).willReturn(trip);
+        given(tripService.canEnterFinalEvaluation(trip, 1L)).willReturn(true);
+
+        MockHttpServletRequestBuilder getRequest = get("/trips/room/ABC123")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer 1");
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.roomCode", is("ABC123")))
+                .andExpect(jsonPath("$.name", is("Paris Vacation")));
     }
     
     @Test

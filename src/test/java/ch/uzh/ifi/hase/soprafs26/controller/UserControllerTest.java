@@ -1,27 +1,23 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
-import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
-import ch.uzh.ifi.hase.soprafs26.entity.User;
-import ch.uzh.ifi.hase.soprafs26.service.UserService;
-
+import static org.hamcrest.Matchers.is;
 import org.junit.jupiter.api.Test;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Collections;
-import java.util.List;
-
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doThrow;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
+import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
 /**
  * UserControllerTest
@@ -158,5 +154,26 @@ public class UserControllerTest {
 		// then
 		mockMvc.perform(postRequest)
 				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	public void registerUser_successful_returnsCreated() throws Exception {
+		User registeredUser = new User();
+		registeredUser.setId(1L);
+		registeredUser.setUsername("newUser");
+		registeredUser.setToken("token-123");
+		registeredUser.setStatus(UserStatus.ONLINE);
+
+		given(userService.registerUser(org.mockito.ArgumentMatchers.any(User.class))).willReturn(registeredUser);
+
+		MockHttpServletRequestBuilder postRequest = post("/users/register")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"username\":\"newUser\",\"password\":\"pw\",\"bio\":\"hello\"}");
+
+		mockMvc.perform(postRequest)
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.id", is(1)))
+				.andExpect(jsonPath("$.username", is("newUser")))
+				.andExpect(jsonPath("$.status", is("ONLINE")));
 	}
 }

@@ -9,10 +9,12 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -23,6 +25,8 @@ import ch.uzh.ifi.hase.soprafs26.entity.Comment;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivitySearchResultDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteRequestDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.ActivityVoteResponseDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.CommentPostDTO;
 import ch.uzh.ifi.hase.soprafs26.service.ActivityManagementService;
 import ch.uzh.ifi.hase.soprafs26.service.ActivitySearchService;
@@ -319,6 +323,126 @@ public class ActivityControllerTest {
                             .content(new ObjectMapper().writeValueAsString(postDTO)))
                     .andExpect(status().isBadRequest());
         } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    @Test
+    public void voteActivity_success() {
+        User user = new User();
+        user.setId(1L);
+
+        ActivityVoteRequestDTO voteRequest = new ActivityVoteRequestDTO();
+        voteRequest.setVoteType("UP");
+
+        ActivityVoteResponseDTO responseDTO = new ActivityVoteResponseDTO();
+        responseDTO.setActivityId(10L);
+        responseDTO.setUpvotes(1);
+        responseDTO.setDownvotes(0);
+        responseDTO.setScore(1);
+        responseDTO.setUserVote("UP");
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.when(activityManagementService.voteOnActivity(Mockito.eq(10L), Mockito.eq(1L), Mockito.any(ActivityVoteRequestDTO.class)))
+            .thenReturn(responseDTO);
+
+        try {
+            mockMvc.perform(put("/activities/10/vote")
+                            .header("Authorization", "Bearer token")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(new ObjectMapper().writeValueAsString(voteRequest)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.activityId").value(10))
+                    .andExpect(jsonPath("$.upvotes").value(1))
+                    .andExpect(jsonPath("$.userVote").value("UP"));
+        }
+        catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    @Test
+    public void getTripComments_success() {
+        User requester = new User();
+        requester.setId(1L);
+
+        User author = new User();
+        author.setId(2L);
+        author.setUsername("bob");
+
+        Comment comment = new Comment();
+        comment.setId(5L);
+        comment.setTripId(1L);
+        comment.setDestinationId(2L);
+        comment.setActivityId(10L);
+        comment.setUserId(2L);
+        comment.setContent("Great plan");
+        comment.setCreatedAt(java.time.LocalDateTime.of(2026, 5, 9, 10, 0));
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(requester);
+        Mockito.when(commentService.getCommentsForTrip(1L, 1L)).thenReturn(List.of(comment));
+        Mockito.when(userService.getUserById(2L)).thenReturn(author);
+
+        try {
+            mockMvc.perform(get("/trips/1/comments")
+                            .header("Authorization", "Bearer token")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].id").value(5))
+                    .andExpect(jsonPath("$[0].username").value("bob"))
+                    .andExpect(jsonPath("$[0].content").value("Great plan"));
+        }
+        catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    @Test
+    public void searchActivitiesLegacy_success() {
+        User user = new User();
+        user.setId(1L);
+
+        ActivitySearchResultDTO result = new ActivitySearchResultDTO();
+        result.setPlaceId("legacy-1");
+        result.setName("Legacy Search Result");
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.when(activitySearchService.searchActivities(null, null, "museum", "Zurich", 2000))
+                .thenReturn(List.of(result));
+
+        try {
+            mockMvc.perform(get("/activities/search")
+                            .header("Authorization", "Bearer token")
+                            .param("query", "museum")
+                            .param("location", "Zurich")
+                            .param("radius", "2000")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].placeId").value("legacy-1"));
+        }
+        catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    @Test
+    public void getActivityPhoto_success() {
+        byte[] imageBytes = new byte[] {1, 2, 3};
+        ResponseEntity<byte[]> photoResponse = ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_JPEG)
+                .body(imageBytes);
+
+        Mockito.when(activitySearchService.fetchPhoto("photo-ref", 400)).thenReturn(photoResponse);
+
+        try {
+            mockMvc.perform(get("/activities/photo")
+                            .param("photoReference", "photo-ref")
+                            .param("maxwidth", "400"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentType(MediaType.IMAGE_JPEG))
+                    .andExpect(content().bytes(imageBytes));
+        }
+        catch (Exception exception) {
             throw new RuntimeException(exception);
         }
     }
