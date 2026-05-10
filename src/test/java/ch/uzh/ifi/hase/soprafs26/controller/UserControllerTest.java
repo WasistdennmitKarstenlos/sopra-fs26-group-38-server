@@ -159,4 +159,65 @@ public class UserControllerTest {
 		mockMvc.perform(postRequest)
 				.andExpect(status().isBadRequest());
 	}
+
+	@Test
+	public void getUserById_successful() throws Exception {
+		User user = new User();
+		user.setId(1L);
+		user.setUsername("testUsername");
+		user.setStatus(UserStatus.OFFLINE);
+
+		given(userService.getUserById(1L)).willReturn(user);
+
+		mockMvc.perform(get("/users/1"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id", is(user.getId().intValue())))
+				.andExpect(jsonPath("$.username", is(user.getUsername())));
+	}
+
+	@Test
+	public void updateUsername_successful() throws Exception {
+		User authenticatedUser = new User();
+		authenticatedUser.setId(1L);
+
+		User updatedUser = new User();
+		updatedUser.setId(1L);
+		updatedUser.setUsername("newUsername");
+		updatedUser.setStatus(UserStatus.OFFLINE);
+
+		given(userService.validateToken("Bearer testToken")).willReturn(authenticatedUser);
+		given(userService.updateUsername(1L, "newUsername")).willReturn(updatedUser);
+
+		mockMvc.perform(put("/users/me/username")
+				.header("Authorization", "Bearer testToken")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"newUsername\":\"newUsername\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id", is(updatedUser.getId().intValue())))
+				.andExpect(jsonPath("$.username", is(updatedUser.getUsername())));
+	}
+
+	@Test
+	public void updatePassword_successful() throws Exception {
+		User authenticatedUser = new User();
+		authenticatedUser.setId(1L);
+
+		User updatedUser = new User();
+		updatedUser.setId(1L);
+		updatedUser.setUsername("testUsername");
+		updatedUser.setToken("newToken");
+		updatedUser.setStatus(UserStatus.ONLINE);
+
+		given(userService.validateToken("Bearer testToken")).willReturn(authenticatedUser);
+		given(userService.updatePassword(1L, "oldPassword", "newPassword123")).willReturn(updatedUser);
+
+		mockMvc.perform(put("/users/me/password")
+				.header("Authorization", "Bearer testToken")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"currentPassword\":\"oldPassword\",\"newPassword\":\"newPassword123\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id", is(updatedUser.getId().intValue())))
+				.andExpect(jsonPath("$.username", is(updatedUser.getUsername())))
+				.andExpect(jsonPath("$.token", is(updatedUser.getToken())));
+	}
 }
