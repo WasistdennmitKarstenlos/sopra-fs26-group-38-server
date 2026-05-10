@@ -4,9 +4,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.UserUpdatePasswordDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserLoginDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserRegisterDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.UserUpdateUsernameDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
@@ -84,6 +86,41 @@ public class UserController {
 	public UserGetDTO getUserById(@PathVariable("id") Long id) {
 		User user = userService.getUserById(id);
 		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
+	}
+
+	/**
+	 * PUT /users/me/username
+	 * Updates the authenticated user's username.
+	 */
+	@PutMapping("/users/me/username")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public UserGetDTO updateUsername(
+			@RequestHeader(value = "Authorization", required = false) String token,
+			@RequestBody UserUpdateUsernameDTO userUpdateUsernameDTO) {
+		User authenticatedUser = userService.validateToken(token);
+		User updatedUser = userService.updateUsername(
+				authenticatedUser.getId(),
+				userUpdateUsernameDTO.getNewUsername());
+		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(updatedUser);
+	}
+
+	/**
+	 * PUT /users/me/password
+	 * Updates the authenticated user's password and rotates the token.
+	 */
+	@PutMapping("/users/me/password")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public UserGetDTO updatePassword(
+			@RequestHeader(value = "Authorization", required = false) String token,
+			@RequestBody UserUpdatePasswordDTO userUpdatePasswordDTO) {
+		User authenticatedUser = userService.validateToken(token);
+		User updatedUser = userService.updatePassword(
+				authenticatedUser.getId(),
+				userUpdatePasswordDTO.getCurrentPassword(),
+				userUpdatePasswordDTO.getNewPassword());
+		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(updatedUser);
 	}
 
 }
