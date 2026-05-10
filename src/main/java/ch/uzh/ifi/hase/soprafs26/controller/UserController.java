@@ -73,4 +73,17 @@ public class UserController {
 		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(registeredUser);
 	}
 
+	/**
+	 * GET /users/{id}
+	 * Fetch a user by their ID.
+	 * Returns 200 with user data if found, 404 otherwise.
+	 */
+	@GetMapping("/users/{id}")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public UserGetDTO getUserById(@PathVariable("id") Long id) {
+		User user = userService.getUserById(id);
+		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
+	}
+
 }
