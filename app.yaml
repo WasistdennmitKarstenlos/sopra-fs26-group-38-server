@@ -10,6 +10,7 @@ env_variables:
   SPRING_DATASOURCE_DRIVER_CLASS_NAME: "com.mysql.cj.jdbc.Driver"
   SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
   SPRING_JPA_DATABASE_PLATFORM: "org.hibernate.dialect.MySQLDialect"
+  APP_CORS_ALLOWED_ORIGINS: "https://sopra-fs26-group-38-client.vercel.app"
 
 network:
   session_affinity: true
