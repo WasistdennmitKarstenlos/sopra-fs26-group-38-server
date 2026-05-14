@@ -4,7 +4,7 @@ env: flex
 service: default
 
 env_variables:
-  SPRING_DATASOURCE_URL: "jdbc:mysql:///sopra-db-prod?cloudSqlInstance=sopra-fs26-group-38-server:europe-west6:sopra-db&socketFactory=com.google.cloud.sql.mysql.SocketFactory"
+  SPRING_DATASOURCE_URL: "jdbc:mysql:///sopra-db-prod?cloudSqlInstance=sopra-fs26-group-38-server:europe-west6:sopra-db&socketFactory=com.google.cloud.sql.mysql.SocketFactory&cloudSqlRefreshStrategy=lazy"
   SPRING_DATASOURCE_USERNAME: "soprauser"
   SPRING_DATASOURCE_PASSWORD: "IpKU^1BasC/P|x\\]"
   SPRING_DATASOURCE_DRIVER_CLASS_NAME: "com.mysql.cj.jdbc.Driver"
@@ -15,7 +15,7 @@ network:
   session_affinity: true
 
 automatic_scaling:
-  min_num_instances: 1
+  min_num_instances: 0
   max_num_instances: 1
 
 resources:

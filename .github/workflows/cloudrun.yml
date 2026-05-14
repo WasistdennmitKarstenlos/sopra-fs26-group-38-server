@@ -1,0 +1,155 @@
+name: Deploy Project to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  PROJECT_ID: sopra-fs26-group-38-server
+  REGION: europe-west6
+  SERVICE_NAME: sopra-fs26-group-38-server
+  ARTIFACT_REGISTRY_REPOSITORY: sopra-fs26-group-38-server
+  IMAGE_NAME: soprafs26
+  CLOUD_SQL_INSTANCE: sopra-fs26-group-38-server:europe-west6:sopra-db
+  CLOUD_RUN_MIN_INSTANCES: 0
+  CLOUD_RUN_MAX_INSTANCES: 1
+  CLOUD_RUN_TIMEOUT: 55m
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Install Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Test and analyze
+        run: ./gradlew test jacocoTestReport sonar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  deploy:
+    name: Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        env:
+          GCP_SERVICE_CREDENTIALS: ${{ secrets.GCP_SERVICE_CREDENTIALS }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          if [ -z "${GCP_SERVICE_CREDENTIALS}" ]; then
+            echo "::error::Missing required secret GCP_SERVICE_CREDENTIALS."
+            exit 1
+          fi
+
+          if [ -z "${GOOGLE_MAPS_API_KEY}" ]; then
+            echo "::error::Missing required secret GOOGLE_MAPS_API_KEY."
+            exit 1
+          fi
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_CREDENTIALS }}
+
+      - name: Install Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Set image URI
+        id: image
+        run: |
+          image_uri="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REGISTRY_REPOSITORY}/${IMAGE_NAME}:${GITHUB_SHA}"
+          latest_uri="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REGISTRY_REPOSITORY}/${IMAGE_NAME}:latest"
+
+          echo "uri=${image_uri}" >> "${GITHUB_OUTPUT}"
+          echo "latest_uri=${latest_uri}" >> "${GITHUB_OUTPUT}"
+
+      - name: Ensure Artifact Registry repository exists
+        run: |
+          if ! gcloud artifacts repositories describe "${ARTIFACT_REGISTRY_REPOSITORY}" \
+              --location="${REGION}" \
+              --project="${PROJECT_ID}" >/dev/null 2>&1; then
+            gcloud artifacts repositories create "${ARTIFACT_REGISTRY_REPOSITORY}" \
+              --repository-format=docker \
+              --location="${REGION}" \
+              --description="Docker images for ${SERVICE_NAME}" \
+              --project="${PROJECT_ID}"
+          fi
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ steps.image.outputs.uri }}
+            ${{ steps.image.outputs.latest_uri }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Prepare Cloud Run environment file
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          ruby <<'RUBY'
+          require "yaml"
+
+          app_config = YAML.load_file("app.yaml")
+          env_vars = app_config.fetch("env_variables").transform_keys(&:to_s)
+          env_vars["GOOGLE_MAPS_API_KEY"] = ENV.fetch("GOOGLE_MAPS_API_KEY")
+
+          File.write("cloudrun-env.yaml", env_vars.to_yaml)
+          RUBY
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          region: ${{ env.REGION }}
+          service: ${{ env.SERVICE_NAME }}
+          image: ${{ steps.image.outputs.uri }}
+          timeout: ${{ env.CLOUD_RUN_TIMEOUT }}
+          flags: >-
+            --no-invoker-iam-check
+            --cpu=1
+            --memory=1Gi
+            --port=8080
+            --env-vars-file=cloudrun-env.yaml
+            --set-cloudsql-instances=${{ env.CLOUD_SQL_INSTANCE }}
+            --min-instances=${{ env.CLOUD_RUN_MIN_INSTANCES }}
+            --max-instances=${{ env.CLOUD_RUN_MAX_INSTANCES }}
+            --session-affinity
+
+      - name: Smoke test Cloud Run service
+        run: curl --fail --show-error --silent "${{ steps.deploy.outputs.url }}"
