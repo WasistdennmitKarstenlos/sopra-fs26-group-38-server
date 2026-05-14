@@ -24,21 +24,22 @@ class ApplicationCorsTest {
 
 	@Test
 	void corsPreflight_allowsConfiguredOrigin() throws Exception {
-		mockMvc.perform(options("/users")
-				.header(HttpHeaders.ORIGIN, "http://localhost:3000")
-				.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET")
+		mockMvc.perform(options("/auth/login")
+				.header(HttpHeaders.ORIGIN, "https://sopra-fs26-group-38-client.vercel.app")
+				.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
 				.header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS,
-						"authorization,content-type,access-control-allow-origin"))
+						"authorization,content-type"))
 				.andExpect(status().isOk())
-				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:3000"))
+				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN,
+						"https://sopra-fs26-group-38-client.vercel.app"))
 				.andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS));
 	}
 
 	@Test
 	void corsPreflight_rejectsUnconfiguredOrigin() throws Exception {
-		mockMvc.perform(options("/users")
+		mockMvc.perform(options("/auth/login")
 				.header(HttpHeaders.ORIGIN, "https://malicious.example")
-				.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET"))
+				.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST"))
 				.andExpect(status().isForbidden())
 				.andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN));
 	}

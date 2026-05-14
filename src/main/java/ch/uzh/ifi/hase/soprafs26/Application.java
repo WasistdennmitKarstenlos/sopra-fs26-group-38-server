@@ -2,17 +2,21 @@ package ch.uzh.ifi.hase.soprafs26;
 
 import java.net.URI;
 import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.Ordered;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 @RestController
 @SpringBootApplication
@@ -31,26 +35,23 @@ public class Application {
 	}
 
 	@Bean
-	public WebMvcConfigurer corsConfigurer(@Value("${app.cors.allowed-origins}") String allowedOriginsProperty) {
+	public FilterRegistrationBean<CorsFilter> corsFilter(
+			@Value("${app.cors.allowed-origins}") String allowedOriginsProperty) {
 		String[] allowedOrigins = parseAllowedOrigins(allowedOriginsProperty);
 
-		return new WebMvcConfigurer() {
-			@Override
-			public void addCorsMappings(CorsRegistry registry) {
-				registry.addMapping("/**")
-						.allowedOrigins(allowedOrigins)
-						.allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-						.allowedHeaders(
-								"Authorization",
-								"Content-Type",
-								"Accept",
-								"Cache-Control",
-								"Pragma",
-								"Access-Control-Allow-Origin")
-						.allowCredentials(false)
-						.maxAge(3600);
-			}
-		};
+		CorsConfiguration configuration = new CorsConfiguration();
+		configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
+		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+		configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Cache-Control", "Pragma"));
+		configuration.setAllowCredentials(false);
+		configuration.setMaxAge(3600L);
+
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", configuration);
+
+		FilterRegistrationBean<CorsFilter> registration = new FilterRegistrationBean<>(new CorsFilter(source));
+		registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+		return registration;
 	}
 
 	static String[] parseAllowedOrigins(String allowedOriginsProperty) {
