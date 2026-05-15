@@ -114,7 +114,7 @@ public class TripControllerTest {
 
         given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
         given(tripService.getTripById(1L)).willReturn(trip);
-        given(tripService.canEnterFinalEvaluation(trip, 1L)).willReturn(true);
+        given(tripService.canFinalizeTrip(trip, 1L)).willReturn(true);
 
         // when
         MockHttpServletRequestBuilder getRequest = get("/trips/1")
@@ -130,7 +130,7 @@ public class TripControllerTest {
                 .andExpect(jsonPath("$.host", is(true)))
                 .andExpect(jsonPath("$.evaluationMode", is(false)))
                 .andExpect(jsonPath("$.finalized", is(false)))
-                .andExpect(jsonPath("$.canEnterFinalEvaluation", is(true)));
+                .andExpect(jsonPath("$.canFinalizeTrip", is(true)));
     }
 
     @Test
@@ -268,8 +268,8 @@ public class TripControllerTest {
         trip.setStatus(Trip.TripStatus.EVALUATION);
 
         given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
-        given(tripService.enterFinalEvaluation(1L, 1L)).willReturn(trip);
-        given(tripService.canEnterFinalEvaluation(trip, 1L)).willReturn(false);
+        given(tripService.startFinalizeTrip(1L, 1L)).willReturn(trip);
+        given(tripService.canFinalizeTrip(trip, 1L)).willReturn(false);
 
         // when
         MockHttpServletRequestBuilder putRequest = put("/trips/1/status")
@@ -298,8 +298,8 @@ public class TripControllerTest {
         trip.setStatus(Trip.TripStatus.ACTIVE);
 
         given(userService.validateToken("Bearer valid-token")).willReturn(nonHost);
-        given(tripService.enterFinalEvaluation(1L, 2L))
-                .willThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can enter final evaluation mode"));
+        given(tripService.startFinalizeTrip(1L, 2L))
+                .willThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can finalize the trip"));
 
         // when
         MockHttpServletRequestBuilder putRequest = put("/trips/1/status")
@@ -313,7 +313,7 @@ public class TripControllerTest {
     }
 
     @Test
-    public void enterFinalEvaluation_validInput_success() throws Exception {
+    public void startFinalizeTrip_validInput_success() throws Exception {
         Trip trip = new Trip();
         trip.setId(1L);
         trip.setName("Paris Vacation");
@@ -322,9 +322,9 @@ public class TripControllerTest {
         trip.setStatus(Trip.TripStatus.EVALUATION);
 
         given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
-        given(tripService.enterFinalEvaluation(1L, 1L)).willReturn(trip);
+        given(tripService.startFinalizeTrip(1L, 1L)).willReturn(trip);
 
-        MockHttpServletRequestBuilder postRequest = post("/trips/1/final-evaluation")
+        MockHttpServletRequestBuilder postRequest = post("/trips/1/finalize-trip")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer 1");
 
@@ -332,19 +332,19 @@ public class TripControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("EVALUATION")))
                 .andExpect(jsonPath("$.evaluationMode", is(true)))
-                .andExpect(jsonPath("$.canEnterFinalEvaluation", is(false)));
+                .andExpect(jsonPath("$.canFinalizeTrip", is(false)));
     }
 
     @Test
-    public void enterFinalEvaluation_nonHost_forbidden() throws Exception {
+    public void startFinalizeTrip_nonHost_forbidden() throws Exception {
         User nonHost = new User();
         nonHost.setId(2L);
 
         given(userService.validateToken("Bearer valid-token")).willReturn(nonHost);
-        given(tripService.enterFinalEvaluation(1L, 2L))
-                .willThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can enter final evaluation mode"));
+        given(tripService.startFinalizeTrip(1L, 2L))
+                .willThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the host can finalize the trip"));
 
-        MockHttpServletRequestBuilder postRequest = post("/trips/1/final-evaluation")
+        MockHttpServletRequestBuilder postRequest = post("/trips/1/finalize-trip")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer valid-token");
 

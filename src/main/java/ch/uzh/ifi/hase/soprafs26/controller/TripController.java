@@ -231,23 +231,23 @@ public class TripController {
             );
         }
 
-        Trip updatedTrip = tripService.enterFinalEvaluation(tripId, authenticatedUser.getId());
+        Trip updatedTrip = tripService.startFinalizeTrip(tripId, authenticatedUser.getId());
         return toTripGetDTOForUser(updatedTrip, authenticatedUser.getId());
     }
 
     /**
-     * Enter final evaluation mode.
-     * Dedicated endpoint for host action "Final Evaluation".
+     * Enter Finalize Trip mode.
+     * Dedicated endpoint for host action "Finalize Trip".
      * @param tripId the ID of the trip
      * @param token Authorization header containing Bearer token
      * @return the updated trip in EVALUATION status
      */
-    @PostMapping("/{tripId}/final-evaluation")
+    @PostMapping("/{tripId}/finalize-trip")
     @ResponseStatus(HttpStatus.OK)
-    public TripGetDTO enterFinalEvaluation(@RequestHeader(value = "Authorization", required = false) String token,
+    public TripGetDTO startFinalizeTrip(@RequestHeader(value = "Authorization", required = false) String token,
                                            @PathVariable Long tripId) {
         User authenticatedUser = userService.validateToken(token);
-        Trip updatedTrip = tripService.enterFinalEvaluation(tripId, authenticatedUser.getId());
+        Trip updatedTrip = tripService.startFinalizeTrip(tripId, authenticatedUser.getId());
         return toTripGetDTOForUser(updatedTrip, authenticatedUser.getId());
     }
 
@@ -289,7 +289,7 @@ public class TripController {
         dto.setHost(isHost);
         dto.setEvaluationMode(trip.getStatus() == Trip.TripStatus.EVALUATION);
         dto.setFinalized(trip.getStatus() == Trip.TripStatus.FINALIZED);
-        dto.setCanEnterFinalEvaluation(tripService.canEnterFinalEvaluation(trip, userId));
+        dto.setCanFinalizeTrip(tripService.canFinalizeTrip(trip, userId));
         return dto;
     }
 }
