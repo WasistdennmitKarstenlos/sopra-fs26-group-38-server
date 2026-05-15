@@ -242,40 +242,40 @@ public class TripServiceTest {
     }
 
     @Test
-    public void enterFinalEvaluation_nonHost_forbidden() {
+    public void startFinalizeTrip_nonHost_forbidden() {
         Mockito.when(tripRepository.findById(1L)).thenReturn(Optional.of(testTrip));
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> tripService.enterFinalEvaluation(1L, 99L)
+                () -> tripService.startFinalizeTrip(1L, 99L)
         );
 
         assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
     }
 
     @Test
-    public void canEnterFinalEvaluation_hostWithDestination_true() {
+    public void canFinalizeTrip_hostWithDestination_true() {
         Mockito.when(destinationRepository.existsByTripId(1L)).thenReturn(true);
 
-        boolean result = tripService.canEnterFinalEvaluation(testTrip, 1L);
+        boolean result = tripService.canFinalizeTrip(testTrip, 1L);
 
         assertTrue(result);
     }
 
     @Test
-    public void canEnterFinalEvaluation_nonHost_false() {
+    public void canFinalizeTrip_nonHost_false() {
         Mockito.when(destinationRepository.existsByTripId(1L)).thenReturn(true);
 
-        boolean result = tripService.canEnterFinalEvaluation(testTrip, 99L);
+        boolean result = tripService.canFinalizeTrip(testTrip, 99L);
 
         assertEquals(false, result);
     }
 
     @Test
-    public void canEnterFinalEvaluation_noDestination_false() {
+    public void canFinalizeTrip_noDestination_false() {
         Mockito.when(destinationRepository.existsByTripId(1L)).thenReturn(false);
 
-        boolean result = tripService.canEnterFinalEvaluation(testTrip, 1L);
+        boolean result = tripService.canFinalizeTrip(testTrip, 1L);
 
         assertEquals(false, result);
     }
