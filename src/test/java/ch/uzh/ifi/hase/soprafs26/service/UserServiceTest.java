@@ -45,32 +45,6 @@ public class UserServiceTest {
 	}
 
 	@Test
-	public void updateUsername_successful_updatesUsername() {
-		Mockito.when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
-		Mockito.when(userRepository.findByUsername("newUsername")).thenReturn(null);
-
-		User updated = userService.updateUsername(1L, "newUsername");
-
-		assertEquals("newUsername", updated.getUsername());
-	}
-
-	@Test
-	public void updateUsername_duplicateUsername_throwsConflict() {
-		User otherUser = new User();
-		otherUser.setId(2L);
-		otherUser.setUsername("existingUsername");
-
-		Mockito.when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
-		Mockito.when(userRepository.findByUsername("existingUsername")).thenReturn(otherUser);
-
-		ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
-			userService.updateUsername(1L, "existingUsername")
-		);
-
-		assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
-	}
-
-	@Test
 	public void updatePassword_successful_updatesPasswordAndRotatesToken() {
 		Mockito.when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
 		String originalToken = testUser.getToken();

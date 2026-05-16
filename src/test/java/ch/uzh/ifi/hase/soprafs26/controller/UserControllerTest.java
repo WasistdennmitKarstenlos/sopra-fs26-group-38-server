@@ -176,28 +176,6 @@ public class UserControllerTest {
 	}
 
 	@Test
-	public void updateUsername_successful() throws Exception {
-		User authenticatedUser = new User();
-		authenticatedUser.setId(1L);
-
-		User updatedUser = new User();
-		updatedUser.setId(1L);
-		updatedUser.setUsername("newUsername");
-		updatedUser.setStatus(UserStatus.OFFLINE);
-
-		given(userService.validateToken("Bearer testToken")).willReturn(authenticatedUser);
-		given(userService.updateUsername(1L, "newUsername")).willReturn(updatedUser);
-
-		mockMvc.perform(put("/users/me/username")
-				.header("Authorization", "Bearer testToken")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"newUsername\":\"newUsername\"}"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id", is(updatedUser.getId().intValue())))
-				.andExpect(jsonPath("$.username", is(updatedUser.getUsername())));
-	}
-
-	@Test
 	public void updatePassword_successful() throws Exception {
 		User authenticatedUser = new User();
 		authenticatedUser.setId(1L);

@@ -8,7 +8,6 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.UserUpdatePasswordDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserLoginDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserRegisterDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.UserUpdateUsernameDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
@@ -86,23 +85,6 @@ public class UserController {
 	public UserGetDTO getUserById(@PathVariable("id") Long id) {
 		User user = userService.getUserById(id);
 		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
-	}
-
-	/**
-	 * PUT /users/me/username
-	 * Updates the authenticated user's username.
-	 */
-	@PutMapping("/users/me/username")
-	@ResponseStatus(HttpStatus.OK)
-	@ResponseBody
-	public UserGetDTO updateUsername(
-			@RequestHeader(value = "Authorization", required = false) String token,
-			@RequestBody UserUpdateUsernameDTO userUpdateUsernameDTO) {
-		User authenticatedUser = userService.validateToken(token);
-		User updatedUser = userService.updateUsername(
-				authenticatedUser.getId(),
-				userUpdateUsernameDTO.getNewUsername());
-		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(updatedUser);
 	}
 
 	/**
