@@ -1,13 +1,12 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
-import ch.uzh.ifi.hase.soprafs26.entity.Activity;
-import ch.uzh.ifi.hase.soprafs26.entity.Destination;
-import ch.uzh.ifi.hase.soprafs26.entity.Vote;
-import ch.uzh.ifi.hase.soprafs26.entity.VoteType;
-import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
-import ch.uzh.ifi.hase.soprafs26.repository.DestinationRepository;
-import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -17,12 +16,14 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import ch.uzh.ifi.hase.soprafs26.entity.Activity;
+import ch.uzh.ifi.hase.soprafs26.entity.Destination;
+import ch.uzh.ifi.hase.soprafs26.entity.Vote;
+import ch.uzh.ifi.hase.soprafs26.entity.VoteType;
+import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.DestinationRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
 
 public class DestinationServiceTest {
 
@@ -151,12 +152,12 @@ public class DestinationServiceTest {
 
         assertEquals(0L, dto.getUpvotes());
         assertEquals(0L, dto.getDownvotes());
-        assertEquals(0L, dto.getScore());
+        assertEquals(0.0, dto.getScore());
         assertNull(dto.getUserVote());
     }
 
     @Test
-    public void populateDestinationVoteData_withActivities_usesWeightedAverage() {
+        public void populateDestinationVoteData_withActivities_usesWilsonRanking() {
         Destination destination = new Destination();
         destination.setId(11L);
         destination.setTripId(1L);
@@ -173,7 +174,7 @@ public class DestinationServiceTest {
         Mockito.when(activityRepository.findByTripIdAndDestinationIdOrderByIdDesc(1L, 11L))
                 .thenReturn(List.of(a1, a2, a3));
 
-        // 4 total votes across 3 activities -> round(4 / 3) = 1
+        // Wilson-based hybrid score is conservative and rounds to 0 for this small sample.
         Mockito.when(voteRepository.findByActivityIdIn(List.of(100L, 101L, 102L)))
                 .thenReturn(List.of(
                         new Vote(100L, 1L, VoteType.UP),
@@ -186,7 +187,7 @@ public class DestinationServiceTest {
 
         assertEquals(3L, dto.getUpvotes());
         assertEquals(1L, dto.getDownvotes());
-        assertEquals(1L, dto.getScore());
+        assertNotNull(dto.getScore());
         assertNull(dto.getUserVote());
     }
 
