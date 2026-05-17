@@ -6,7 +6,7 @@ service: default
 env_variables:
   SPRING_DATASOURCE_URL: "jdbc:mysql:///sopra-db-prod?cloudSqlInstance=sopra-fs26-group-38-server:europe-west6:sopra-db&socketFactory=com.google.cloud.sql.mysql.SocketFactory&cloudSqlRefreshStrategy=lazy"
   SPRING_DATASOURCE_USERNAME: "soprauser"
-  SPRING_DATASOURCE_PASSWORD: "IpKU^1BasC/P|x\\]"
+  SPRING_DATASOURCE_PASSWORD: "Sopra12345!"
   SPRING_DATASOURCE_DRIVER_CLASS_NAME: "com.mysql.cj.jdbc.Driver"
   SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
   SPRING_JPA_DATABASE_PLATFORM: "org.hibernate.dialect.MySQLDialect"
