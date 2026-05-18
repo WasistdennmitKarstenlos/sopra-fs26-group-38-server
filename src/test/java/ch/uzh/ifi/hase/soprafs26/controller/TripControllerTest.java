@@ -144,7 +144,7 @@ public class TripControllerTest {
 
         given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
         given(tripService.getTripByRoomCode("ABC123")).willReturn(trip);
-        given(tripService.canEnterFinalEvaluation(trip, 1L)).willReturn(true);
+        given(tripService.canFinalizeTrip(trip, 1L)).willReturn(true);
 
         MockHttpServletRequestBuilder getRequest = get("/trips/room/ABC123")
                 .contentType(MediaType.APPLICATION_JSON)
