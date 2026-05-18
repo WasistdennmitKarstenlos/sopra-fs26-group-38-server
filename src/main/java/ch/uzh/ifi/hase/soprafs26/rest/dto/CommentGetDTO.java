@@ -1,6 +1,7 @@
 package ch.uzh.ifi.hase.soprafs26.rest.dto;
 
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 public class CommentGetDTO {
 
@@ -11,6 +12,8 @@ public class CommentGetDTO {
     private Long userId;
     private String username;
     private String content;
+    
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
     private LocalDateTime createdAt;
 
     public Long getId() {
