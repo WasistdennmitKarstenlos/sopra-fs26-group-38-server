@@ -20,7 +20,7 @@ public class TripGetDTO implements Serializable {
     private boolean evaluationMode;
     private boolean finalized;
     private boolean isHost;
-    private boolean canEnterFinalEvaluation;
+    private boolean canFinalizeTrip;
     private String imageBase64;
 
     // Constructors
@@ -29,7 +29,7 @@ public class TripGetDTO implements Serializable {
 
     public TripGetDTO(Long id, String name, String roomCode, Long hostId, Date creationDate,
                       String status, Long finalDestinationId,
-                      boolean evaluationMode, boolean finalized, boolean isHost, boolean canEnterFinalEvaluation) {
+                      boolean evaluationMode, boolean finalized, boolean isHost, boolean canFinalizeTrip) {
         this.id = id;
         this.name = name;
         this.roomCode = roomCode;
@@ -40,7 +40,7 @@ public class TripGetDTO implements Serializable {
         this.evaluationMode = evaluationMode;
         this.finalized = finalized;
         this.isHost = isHost;
-        this.canEnterFinalEvaluation = canEnterFinalEvaluation;
+        this.canFinalizeTrip = canFinalizeTrip;
     }
 
     // Getters and Setters
@@ -124,12 +124,12 @@ public class TripGetDTO implements Serializable {
         isHost = host;
     }
 
-    public boolean isCanEnterFinalEvaluation() {
-        return canEnterFinalEvaluation;
+    public boolean isCanFinalizeTrip() {
+        return canFinalizeTrip;
     }
 
-    public void setCanEnterFinalEvaluation(boolean canEnterFinalEvaluation) {
-        this.canEnterFinalEvaluation = canEnterFinalEvaluation;
+    public void setCanFinalizeTrip(boolean canFinalizeTrip) {
+        this.canFinalizeTrip = canFinalizeTrip;
     }
 
     public String getImageBase64() {

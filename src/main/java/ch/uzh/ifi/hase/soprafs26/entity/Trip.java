@@ -35,7 +35,7 @@ public class Trip implements Serializable {
     private TripStatus status; // ACTIVE, EVALUATION, FINALIZED
 
     @Column
-    private Long finalDestinationId; // ID of the selected destination (after final evaluation)
+    private Long finalDestinationId; // ID of the selected destination (after trip finalization)
 
     @Column(nullable = true, columnDefinition = "LONGTEXT")
     private String imageBase64;

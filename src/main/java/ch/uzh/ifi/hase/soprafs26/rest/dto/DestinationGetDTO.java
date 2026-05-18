@@ -13,7 +13,7 @@ public class DestinationGetDTO implements Serializable {
     private Long proposedByUserId;
     private Long upvotes;
     private Long downvotes;
-    private Long score;
+    private Double score;
     private String userVote;
     private List<ActivitySearchResultDTO> activities;
 
@@ -65,11 +65,11 @@ public class DestinationGetDTO implements Serializable {
         this.downvotes = downvotes;
     }
 
-    public Long getScore() {
+    public Double getScore() {
         return score;
     }
 
-    public void setScore(Long score) {
+    public void setScore(Double score) {
         this.score = score;
     }
 
