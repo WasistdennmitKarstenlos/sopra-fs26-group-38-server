@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.UserUpdatePasswordDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserLoginDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserRegisterDTO;
@@ -100,6 +101,37 @@ public class UserController {
 		User registeredUser = userService.registerUser(userInput);
 		// convert internal representation of user back to API
 		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(registeredUser);
+	}
+
+	/**
+	 * GET /users/{id}
+	 * Fetch a user by their ID.
+	 * Returns 200 with user data if found, 404 otherwise.
+	 */
+	@GetMapping("/users/{id}")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public UserGetDTO getUserById(@PathVariable("id") Long id) {
+		User user = userService.getUserById(id);
+		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
+	}
+
+	/**
+	 * PUT /users/me/password
+	 * Updates the authenticated user's password and rotates the token.
+	 */
+	@PutMapping("/users/me/password")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public UserGetDTO updatePassword(
+			@RequestHeader(value = "Authorization", required = false) String token,
+			@RequestBody UserUpdatePasswordDTO userUpdatePasswordDTO) {
+		User authenticatedUser = userService.validateToken(token);
+		User updatedUser = userService.updatePassword(
+				authenticatedUser.getId(),
+				userUpdatePasswordDTO.getCurrentPassword(),
+				userUpdatePasswordDTO.getNewPassword());
+		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(updatedUser);
 	}
 
 }

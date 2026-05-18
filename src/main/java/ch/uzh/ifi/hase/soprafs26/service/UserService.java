@@ -45,6 +45,40 @@ public class UserService {
 	}
 
 	/**
+	 * Update the password for an authenticated user and rotate their token.
+	 *
+	 * @param userId the user id to update
+	 * @param currentPassword the existing password for verification
+	 * @param newPassword the new password value
+	 * @return the updated user with a rotated token
+	 */
+	public User updatePassword(Long userId, String currentPassword, String newPassword) {
+		if (currentPassword == null || currentPassword.trim().isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Current password cannot be empty!");
+		}
+		if (newPassword == null || newPassword.trim().isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New password cannot be empty!");
+		}
+		if (newPassword.trim().length() < 8) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New password must be at least 8 characters!");
+		}
+
+		User user = getUserById(userId);
+		if (!user.getPassword().equals(currentPassword)) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Current password is incorrect!");
+		}
+
+		user.setPassword(newPassword);
+		user.setToken(UUID.randomUUID().toString());
+		user.setStatus(UserStatus.ONLINE);
+		userRepository.save(user);
+		userRepository.flush();
+
+		log.info("Updated password for user {} and rotated token", userId);
+		return user;
+	}
+
+	/**
 	 * Register a new user (self-registration with auto-login)
 	*/
 	public User registerUser(User newUser) {
