@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import org.springframework.web.server.ResponseStatusException;
@@ -58,7 +59,7 @@ public class UserControllerTest {
 	}
 
 	@Test
-	public void getUserById_successful() throws Exception {
+	public void getUserById_withAuthorization_successful() throws Exception {
 		User user = new User();
 		user.setId(1L);
 		user.setUsername("testUsername");
@@ -199,18 +200,13 @@ public class UserControllerTest {
 	}
 
 	@Test
-	public void getUserById_successful() throws Exception {
-		User user = new User();
-		user.setId(1L);
-		user.setUsername("testUsername");
-		user.setStatus(UserStatus.OFFLINE);
-
-		given(userService.getUserById(1L)).willReturn(user);
+	public void getUserById_withoutAuthorization_returnsUnauthorized() throws Exception {
+		ResponseStatusException unauthorizedException = new ResponseStatusException(
+			org.springframework.http.HttpStatus.UNAUTHORIZED, "Authorization token is required!");
+		given(userService.validateToken(null)).willThrow(unauthorizedException);
 
 		mockMvc.perform(get("/users/1"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id", is(user.getId().intValue())))
-				.andExpect(jsonPath("$.username", is(user.getUsername())));
+				.andExpect(status().isUnauthorized());
 	}
 
 	@Test
@@ -235,6 +231,9 @@ public class UserControllerTest {
 				.andExpect(jsonPath("$.id", is(updatedUser.getId().intValue())))
 				.andExpect(jsonPath("$.username", is(updatedUser.getUsername())))
 				.andExpect(jsonPath("$.token", is(updatedUser.getToken())));
+	}
+
+	@Test
 	public void registerUser_successful_returnsCreated() throws Exception {
 		User registeredUser = new User();
 		registeredUser.setId(1L);
