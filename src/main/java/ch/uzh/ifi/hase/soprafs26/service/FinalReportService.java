@@ -1,11 +1,13 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Activity;
+import ch.uzh.ifi.hase.soprafs26.entity.Comment;
 import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.entity.Vote;
 import ch.uzh.ifi.hase.soprafs26.entity.VoteType;
 import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.CommentRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.FinalReportGetDTO;
 import org.springframework.http.HttpStatus;
@@ -28,15 +30,18 @@ public class FinalReportService {
     private final DestinationService destinationService;
     private final ActivityRepository activityRepository;
     private final VoteRepository voteRepository;
+    private final CommentRepository commentRepository;
 
     public FinalReportService(TripService tripService,
                               DestinationService destinationService,
                               ActivityRepository activityRepository,
-                              VoteRepository voteRepository) {
+                              VoteRepository voteRepository,
+                              CommentRepository commentRepository) {
         this.tripService = tripService;
         this.destinationService = destinationService;
         this.activityRepository = activityRepository;
         this.voteRepository = voteRepository;
+        this.commentRepository = commentRepository;
     }
 
     public FinalReportGetDTO getFinalReport(Long tripId, Long requesterId) {
@@ -84,8 +89,17 @@ public class FinalReportService {
             activityDTO.setUpvotes(tally.upvotes());
             activityDTO.setDownvotes(tally.downvotes());
             activityDTO.setScore(tally.upvotes() - tally.downvotes());
-            // Comments are not yet persisted in the current data model.
-            activityDTO.setComments(List.of());
+            
+            // Fetch comments for this activity
+            List<Comment> activityComments = commentRepository.findByTripIdAndDestinationIdAndActivityIdOrderByCreatedAtAsc(
+                tripId,
+                winningDestination.getId(),
+                activity.getId()
+            );
+            List<String> commentTexts = activityComments.stream()
+                    .map(Comment::getContent)
+                    .toList();
+            activityDTO.setComments(commentTexts);
 
             activityOutcomes.add(activityDTO);
         }
