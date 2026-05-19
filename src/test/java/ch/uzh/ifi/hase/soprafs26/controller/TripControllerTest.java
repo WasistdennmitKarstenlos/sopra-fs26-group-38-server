@@ -103,6 +103,19 @@ public class TripControllerTest {
     }
 
     @Test
+    public void getTrips_unauthorized_returns401() throws Exception {
+        given(userService.validateToken("Bearer invalid-token"))
+                .willThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired token!"));
+
+        MockHttpServletRequestBuilder getRequest = get("/trips")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer invalid-token");
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     public void getTripById_validId_success() throws Exception {
         // given
         Trip trip = new Trip();
@@ -131,6 +144,20 @@ public class TripControllerTest {
                 .andExpect(jsonPath("$.evaluationMode", is(false)))
                 .andExpect(jsonPath("$.finalized", is(false)))
                 .andExpect(jsonPath("$.canFinalizeTrip", is(true)));
+    }
+
+    @Test
+    public void getTripById_notFound_returns404() throws Exception {
+        given(userService.validateToken("Bearer 1")).willReturn(authenticatedUser());
+        given(tripService.getTripById(999L))
+                .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Trip not found"));
+
+        MockHttpServletRequestBuilder getRequest = get("/trips/999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer 1");
+
+        mockMvc.perform(getRequest)
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -255,6 +282,23 @@ public class TripControllerTest {
         mockMvc.perform(postRequest)
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.imageBase64", is("data:image/jpeg;base64,/9j/abc123")));
+    }
+
+    @Test
+    public void createTrip_unauthorized_returns401() throws Exception {
+        TripPostDTO tripPostDTO = new TripPostDTO();
+        tripPostDTO.setName("Paris Vacation");
+
+        given(userService.validateToken("Bearer invalid-token"))
+                .willThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired token!"));
+
+        MockHttpServletRequestBuilder postRequest = post("/trips")
+                .header("Authorization", "Bearer invalid-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(tripPostDTO));
+
+        mockMvc.perform(postRequest)
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -422,6 +466,23 @@ public class TripControllerTest {
 
         mockMvc.perform(postRequest)
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void joinTrip_unauthorized_returns401() throws Exception {
+        JoinTripRequestDTO requestDTO = new JoinTripRequestDTO();
+        requestDTO.setRoomCode("ABC123");
+
+        given(userService.validateToken("Bearer invalid-token"))
+                .willThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired token!"));
+
+        MockHttpServletRequestBuilder postRequest = post("/trips/join")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer invalid-token")
+                .content(new ObjectMapper().writeValueAsString(requestDTO));
+
+        mockMvc.perform(postRequest)
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

@@ -126,6 +126,21 @@ public class DestinationControllerTest {
         verify(destinationRealtimeService).publish(eq(1L), any(List.class));
     }
 
+        @Test
+        public void createDestination_unauthorized_returns401() throws Exception {
+                DestinationPostDTO postDTO = new DestinationPostDTO();
+                postDTO.setDestinationName("Zurich");
+
+                Mockito.when(userService.validateToken("Bearer invalid-token"))
+                                .thenThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired token!"));
+
+                mockMvc.perform(post("/trips/1/destinations")
+                                                .header("Authorization", "Bearer invalid-token")
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(new ObjectMapper().writeValueAsString(postDTO)))
+                                .andExpect(status().isUnauthorized());
+        }
+
     @Test
     public void createDestination_nonParticipant_forbidden() throws Exception {
         User user = new User();
@@ -361,6 +376,25 @@ public class DestinationControllerTest {
     }
 
     @Test
+    public void updateDestination_notFound_returns404() throws Exception {
+        User user = new User();
+        user.setId(1L);
+
+        DestinationPostDTO postDTO = new DestinationPostDTO();
+        postDTO.setDestinationName("Bern");
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.when(destinationService.updateDestination(eq(1L), eq(999L), any(Destination.class), eq(1L)))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Destination not found"));
+
+        mockMvc.perform(put("/trips/1/destinations/999")
+                        .header("Authorization", "Bearer token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(postDTO)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     public void deleteDestination_success() throws Exception {
         User user = new User();
         user.setId(1L);
@@ -372,6 +406,34 @@ public class DestinationControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(destinationService).deleteDestination(1L, 11L, 1L);
+    }
+
+    @Test
+    public void deleteDestination_forbidden_returns403() throws Exception {
+        User user = new User();
+        user.setId(1L);
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Only owner can delete destination"))
+                .when(destinationService).deleteDestination(1L, 11L, 1L);
+
+        mockMvc.perform(delete("/trips/1/destinations/11")
+                        .header("Authorization", "Bearer token"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    public void deleteDestination_notFound_returns404() throws Exception {
+        User user = new User();
+        user.setId(1L);
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Destination not found"))
+                .when(destinationService).deleteDestination(1L, 999L, 1L);
+
+        mockMvc.perform(delete("/trips/1/destinations/999")
+                        .header("Authorization", "Bearer token"))
+                .andExpect(status().isNotFound());
     }
 
     @Test

@@ -362,6 +362,30 @@ public class ActivityControllerTest {
     }
 
     @Test
+    public void voteActivity_notFound_returns404() {
+        User user = new User();
+        user.setId(1L);
+
+        ActivityVoteRequestDTO voteRequest = new ActivityVoteRequestDTO();
+        voteRequest.setVoteType("UP");
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.when(activityManagementService.voteOnActivity(Mockito.eq(999L), Mockito.eq(1L), Mockito.any(ActivityVoteRequestDTO.class)))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Activity not found"));
+
+        try {
+            mockMvc.perform(put("/activities/999/vote")
+                            .header("Authorization", "Bearer token")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(new ObjectMapper().writeValueAsString(voteRequest)))
+                    .andExpect(status().isNotFound());
+        }
+        catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    @Test
     public void getTripComments_success() {
         User requester = new User();
         requester.setId(1L);
@@ -398,6 +422,31 @@ public class ActivityControllerTest {
     }
 
     @Test
+    public void addComment_forbidden_returns403() {
+        User user = new User();
+        user.setId(1L);
+
+        CommentPostDTO postDTO = new CommentPostDTO();
+        postDTO.setContent("Looks amazing");
+
+        Mockito.when(userService.validateToken("Bearer token")).thenReturn(user);
+        Mockito.when(commentService.addComment(1L, 2L, 10L, 1L, "Looks amazing"))
+                .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "Trip is in read-only mode. Comments are only allowed while trip is ACTIVE"));
+
+        try {
+            mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/trips/1/destinations/2/activities/10/comments")
+                            .header("Authorization", "Bearer token")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(new ObjectMapper().writeValueAsString(postDTO)))
+                    .andExpect(status().isForbidden());
+        }
+        catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    @Test
     public void searchActivitiesLegacy_success() {
         User user = new User();
         user.setId(1L);
@@ -419,6 +468,23 @@ public class ActivityControllerTest {
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$[0].placeId").value("legacy-1"));
+        }
+        catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    @Test
+    public void searchActivitiesLegacy_unauthorized_returns401() {
+        Mockito.when(userService.validateToken("Bearer invalid-token"))
+                .thenThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired token!"));
+
+        try {
+            mockMvc.perform(get("/activities/search")
+                            .header("Authorization", "Bearer invalid-token")
+                            .param("query", "museum")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isUnauthorized());
         }
         catch (Exception exception) {
             throw new RuntimeException(exception);
