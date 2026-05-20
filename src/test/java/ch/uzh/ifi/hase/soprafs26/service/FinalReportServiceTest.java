@@ -6,6 +6,7 @@ import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.entity.Vote;
 import ch.uzh.ifi.hase.soprafs26.entity.VoteType;
 import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.CommentRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.FinalReportGetDTO;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +37,9 @@ public class FinalReportServiceTest {
 
     @Mock
     private VoteRepository voteRepository;
+
+    @Mock
+    private CommentRepository commentRepository;
 
     @InjectMocks
     private FinalReportService finalReportService;
@@ -86,6 +90,10 @@ public class FinalReportServiceTest {
                 new Vote(100L, 3L, VoteType.DOWN),
                 new Vote(101L, 1L, VoteType.UP)
         ));
+        Mockito.when(commentRepository.findByTripIdAndDestinationIdAndActivityIdOrderByCreatedAtAsc(1L, 10L, 100L))
+                .thenReturn(List.of());
+        Mockito.when(commentRepository.findByTripIdAndDestinationIdAndActivityIdOrderByCreatedAtAsc(1L, 10L, 101L))
+                .thenReturn(List.of());
 
         FinalReportGetDTO report = finalReportService.getFinalReport(1L, 1L);
 
