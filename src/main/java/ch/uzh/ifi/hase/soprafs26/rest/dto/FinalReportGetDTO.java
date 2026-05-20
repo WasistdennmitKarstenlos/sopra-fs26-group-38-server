@@ -63,7 +63,7 @@ public class FinalReportGetDTO implements Serializable {
         private String name;
         private long totalUpvotes;
         private long totalDownvotes;
-        private long totalScore;
+        private double totalScore;
         private List<ActivityFinalOutcomeDTO> activities = new ArrayList<>();
 
         public Long getId() {
@@ -98,11 +98,11 @@ public class FinalReportGetDTO implements Serializable {
             this.totalDownvotes = totalDownvotes;
         }
 
-        public long getTotalScore() {
+        public double getTotalScore() {
             return totalScore;
         }
 
-        public void setTotalScore(long totalScore) {
+        public void setTotalScore(double totalScore) {
             this.totalScore = totalScore;
         }
 

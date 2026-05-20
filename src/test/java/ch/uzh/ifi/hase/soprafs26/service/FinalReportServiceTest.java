@@ -1,5 +1,20 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
 import ch.uzh.ifi.hase.soprafs26.entity.Activity;
 import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
@@ -8,21 +23,8 @@ import ch.uzh.ifi.hase.soprafs26.entity.VoteType;
 import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.CommentRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.FinalReportGetDTO;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FinalReportServiceTest {
 
@@ -83,6 +85,13 @@ public class FinalReportServiceTest {
 
         Mockito.when(tripService.getTripForParticipant(1L, 1L)).thenReturn(finalizedTrip);
         Mockito.when(destinationService.getDestinationEntity(1L, 10L)).thenReturn(destination);
+                Mockito.doAnswer(invocation -> {
+                        Object dtoArg = invocation.getArgument(2);
+                        if (dtoArg instanceof DestinationGetDTO dto) {
+                                dto.setScore(0.3);
+                        }
+                        return null;
+                }).when(destinationService).populateDestinationVoteData(any(), any(), any());
         Mockito.when(activityRepository.findByTripIdAndDestinationIdOrderByIdDesc(1L, 10L)).thenReturn(List.of(eiffel, louvre));
         Mockito.when(voteRepository.findByActivityIdIn(List.of(100L, 101L))).thenReturn(List.of(
                 new Vote(100L, 1L, VoteType.UP),
@@ -105,7 +114,7 @@ public class FinalReportServiceTest {
         assertEquals(2, report.getWinningDestination().getActivities().get(0).getUpvotes());
         assertEquals(1, report.getWinningDestination().getActivities().get(0).getDownvotes());
         assertEquals(1, report.getWinningDestination().getActivities().get(0).getScore());
-        assertEquals(2, report.getWinningDestination().getTotalScore());
+                assertEquals(0.3, report.getWinningDestination().getTotalScore());
     }
 
     @Test

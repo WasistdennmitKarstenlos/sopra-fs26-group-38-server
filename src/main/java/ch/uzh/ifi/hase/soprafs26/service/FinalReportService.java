@@ -1,5 +1,17 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
 import ch.uzh.ifi.hase.soprafs26.entity.Activity;
 import ch.uzh.ifi.hase.soprafs26.entity.Comment;
 import ch.uzh.ifi.hase.soprafs26.entity.Destination;
@@ -9,18 +21,8 @@ import ch.uzh.ifi.hase.soprafs26.entity.VoteType;
 import ch.uzh.ifi.hase.soprafs26.repository.ActivityRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.CommentRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.DestinationGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.FinalReportGetDTO;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Service
 @Transactional(readOnly = true)
@@ -117,9 +119,13 @@ public class FinalReportService {
         long totalUpvotes = activityOutcomes.stream().mapToLong(FinalReportGetDTO.ActivityFinalOutcomeDTO::getUpvotes).sum();
         long totalDownvotes = activityOutcomes.stream().mapToLong(FinalReportGetDTO.ActivityFinalOutcomeDTO::getDownvotes).sum();
 
+        DestinationGetDTO scoreDTO = new DestinationGetDTO();
+        destinationService.populateDestinationVoteData(winningDestination, requesterId, scoreDTO);
+        double destinationScore = scoreDTO.getScore() == null ? 0.0 : scoreDTO.getScore();
+
         destinationDTO.setTotalUpvotes(totalUpvotes);
         destinationDTO.setTotalDownvotes(totalDownvotes);
-        destinationDTO.setTotalScore(totalUpvotes - totalDownvotes);
+        destinationDTO.setTotalScore(destinationScore);
         destinationDTO.setActivities(activityOutcomes);
 
         report.setWinningDestination(destinationDTO);
