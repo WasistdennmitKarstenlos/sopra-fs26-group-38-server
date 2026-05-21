@@ -326,6 +326,7 @@ public class TripService {
 
         Trip updatedTrip = tripRepository.save(trip);
         log.info("Final destination set for trip {}", tripId);
+        eventPublisher.publishEvent(new TripStatusUpdatedEvent(this, tripId, Trip.TripStatus.FINALIZED.name()));
 
         return updatedTrip;
     }

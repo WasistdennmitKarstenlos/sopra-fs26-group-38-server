@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import ch.uzh.ifi.hase.soprafs26.entity.Destination;
 import ch.uzh.ifi.hase.soprafs26.entity.Trip;
 import ch.uzh.ifi.hase.soprafs26.entity.TripMembership;
+import ch.uzh.ifi.hase.soprafs26.event.TripStatusUpdatedEvent;
 import ch.uzh.ifi.hase.soprafs26.repository.DestinationRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.TripMembershipRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.TripRepository;
@@ -292,6 +293,11 @@ public class TripServiceTest {
         Mockito.verify(tripRepository, Mockito.times(1)).save(Mockito.any());
         assertEquals(5L, updatedTrip.getFinalDestinationId());
         assertEquals(Trip.TripStatus.FINALIZED, updatedTrip.getStatus());
+
+        ArgumentCaptor<TripStatusUpdatedEvent> eventCaptor = ArgumentCaptor.forClass(TripStatusUpdatedEvent.class);
+        Mockito.verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertEquals(1L, eventCaptor.getValue().getTripId());
+        assertEquals(Trip.TripStatus.FINALIZED.name(), eventCaptor.getValue().getStatus());
     }
 
     @Test
